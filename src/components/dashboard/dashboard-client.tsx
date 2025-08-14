@@ -10,7 +10,8 @@ import { getContainers, getPods } from "@/lib/mock-data";
 import type { Container, Pod } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { Input } from "../ui/input";
+import { Search } from "lucide-react";
 
 export function DashboardClient() {
   const [containers, setContainers] = React.useState<Container[]>([]);
@@ -19,6 +20,7 @@ export function DashboardClient() {
     Container | Pod | null
   >(null);
   const [loading, setLoading] = React.useState(true);
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   React.useEffect(() => {
     const containersData = getContainers();
@@ -50,57 +52,74 @@ export function DashboardClient() {
     setSelectedItem(updatedItem);
   };
 
+  const filteredContainers = containers.filter((container) =>
+    container.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredPods = pods.filter((pod) =>
+    pod.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <SidebarProvider>
-      <MainLayout>
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 p-4 h-[calc(100vh-2rem)]">
-          <div className="xl:col-span-3 h-full flex flex-col">
-            <Tabs defaultValue="containers" className="flex-grow flex flex-col">
+    <MainLayout>
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 p-4 h-[calc(100vh-2rem)]">
+        <div className="xl:col-span-3 h-full flex flex-col">
+          <Tabs defaultValue="containers" className="flex-grow flex flex-col">
+            <div className="flex justify-between items-center gap-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="containers">Containers</TabsTrigger>
                 <TabsTrigger value="pods">Pods</TabsTrigger>
               </TabsList>
-              {loading ? (
-                <div className="flex-grow mt-4 overflow-hidden">
-                  <Card>
-                    <CardContent className="p-6 space-y-4">
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-10 w-full" />
-                      <Skeleton className="h-10 w-full" />
-                    </CardContent>
-                  </Card>
-                </div>
-              ) : (
-                <>
-                  <TabsContent
-                    value="containers"
-                    className="flex-grow mt-4 overflow-hidden"
-                  >
-                    <ContainerList
-                      containers={containers}
-                      onSelect={handleSelectItem}
-                      selectedId={selectedItem?.id}
-                    />
-                  </TabsContent>
-                  <TabsContent
-                    value="pods"
-                    className="flex-grow mt-4 overflow-hidden"
-                  >
-                    <PodList
-                      pods={pods}
-                      onSelect={handleSelectItem}
-                      selectedId={selectedItem?.id}
-                    />
-                  </TabsContent>
-                </>
-              )}
-            </Tabs>
-          </div>
-          <div className="xl:col-span-2 h-full overflow-hidden">
-            <DetailsPanel item={selectedItem} onItemUpdate={handleUpdateItem} />
-          </div>
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            {loading ? (
+              <div className="flex-grow mt-4 overflow-hidden">
+                <Card>
+                  <CardContent className="p-6 space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <>
+                <TabsContent
+                  value="containers"
+                  className="flex-grow mt-4 overflow-hidden"
+                >
+                  <ContainerList
+                    containers={filteredContainers}
+                    onSelect={handleSelectItem}
+                    selectedId={selectedItem?.id}
+                  />
+                </TabsContent>
+                <TabsContent
+                  value="pods"
+                  className="flex-grow mt-4 overflow-hidden"
+                >
+                  <PodList
+                    pods={filteredPods}
+                    onSelect={handleSelectItem}
+                    selectedId={selectedItem?.id}
+                  />
+                </TabsContent>
+              </>
+            )}
+          </Tabs>
         </div>
-      </MainLayout>
-    </SidebarProvider>
+        <div className="xl:col-span-2 h-full overflow-hidden">
+          <DetailsPanel item={selectedItem} onItemUpdate={handleUpdateItem} />
+        </div>
+      </div>
+    </MainLayout>
   );
 }
