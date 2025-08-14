@@ -18,7 +18,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = React.useState(true);
   
   React.useEffect(() => {
-    // Fetch data on the client to avoid hydration mismatch
+    // Fetch data on the client to ensure it's consistent and avoids hydration errors.
     const containersData = getContainers();
     const podsData = getPods();
     setContainers(containersData);

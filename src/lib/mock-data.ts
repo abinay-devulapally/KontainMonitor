@@ -1,14 +1,22 @@
 import type { Container, Pod } from "@/types";
 
 const generateResourceHistory = (points: number, max: number, min = 0) => {
-  if (typeof window === "undefined") return [];
+  // This function should only run on the client, where window is defined.
+  if (typeof window === "undefined") {
+    // Return a static, non-random array for server-side rendering
+    return Array.from({ length: points }, () => ({
+      time: "00:00",
+      value: 0
+    }));
+  }
+
   return Array.from({ length: points }, (_, i) => ({
     time: new Date(Date.now() - (points - i) * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     value: Math.floor(Math.random() * (max - min + 1)) + min,
   }));
 };
 
-export const getContainers = (): Container[] => [
+const containersData: Container[] = [
   {
     type: "container",
     id: "c1",
@@ -17,11 +25,11 @@ export const getContainers = (): Container[] => [
     health: "healthy",
     image: "nginx:latest",
     engine: "docker",
-    cpuUsage: generateResourceHistory(30, 85, 40),
-    memoryUsage: generateResourceHistory(30, 70, 50),
+    cpuUsage: [],
+    memoryUsage: [],
     networkIO: {
-      in: generateResourceHistory(30, 5, 1),
-      out: generateResourceHistory(30, 20, 5),
+      in: [],
+      out: [],
     },
     logs: [
       '2024-07-29T10:00:00Z [info] Starting up...',
@@ -54,11 +62,11 @@ spec:
     health: "unhealthy",
     image: "postgres:14",
     engine: "docker",
-    cpuUsage: generateResourceHistory(30, 40, 10),
-    memoryUsage: generateResourceHistory(30, 95, 80), // High memory usage
+    cpuUsage: [],
+    memoryUsage: [],
     networkIO: {
-      in: generateResourceHistory(30, 50, 20),
-      out: generateResourceHistory(30, 50, 20),
+      in: [],
+      out: [],
     },
     logs: [
         '2024-07-29T09:30:00Z [info] Database system is ready to accept connections',
@@ -91,11 +99,11 @@ spec:
     health: "unhealthy",
     image: "redis:alpine",
     engine: "rancher",
-    cpuUsage: generateResourceHistory(30, 98, 90), // High CPU
-    memoryUsage: generateResourceHistory(30, 60, 40),
+    cpuUsage: [],
+    memoryUsage: [],
     networkIO: {
-      in: generateResourceHistory(30, 10, 2),
-      out: generateResourceHistory(30, 10, 2),
+      in: [],
+      out: [],
     },
     logs: [
       '2024-07-29T11:00:00Z [error] OOMKilled: process terminated',
@@ -125,11 +133,11 @@ spec:
     health: "not-enabled",
     image: "ubuntu:18.04",
     engine: "podman",
-    cpuUsage: generateResourceHistory(30, 0, 0),
-    memoryUsage: generateResourceHistory(30, 0, 0),
+    cpuUsage: [],
+    memoryUsage: [],
     networkIO: {
-      in: generateResourceHistory(30, 0, 0),
-      out: generateResourceHistory(30, 0, 0),
+      in: [],
+      out: [],
     },
     logs: [
       '2024-07-28T14:00:00Z [info] Container stopped by user.',
@@ -140,15 +148,15 @@ spec:
   },
 ];
 
-export const getPods = (): Pod[] => [
+const podsData: Pod[] = [
   {
     type: "pod",
     id: "p1",
     name: "production-stack",
     status: "running",
     containers: ["c1", "c2"],
-    cpuUsage: generateResourceHistory(30, 60, 20),
-    memoryUsage: generateResourceHistory(30, 80, 60),
+    cpuUsage: [],
+    memoryUsage: [],
     config: `
 apiVersion: v1
 kind: Pod
@@ -166,8 +174,8 @@ spec:
     name: "worker-pool",
     status: "failed",
     containers: ["c3"],
-    cpuUsage: generateResourceHistory(30, 0, 0),
-    memoryUsage: generateResourceHistory(30, 0, 0),
+    cpuUsage: [],
+    memoryUsage: [],
     config: `
 apiVersion: v1
 kind: Pod
@@ -178,3 +186,32 @@ spec:
 `
   },
 ];
+
+
+export const getContainers = (): Container[] => {
+    // Only generate dynamic data on the client
+    if (typeof window !== "undefined") {
+        return containersData.map(c => ({
+            ...c,
+            cpuUsage: c.id === 'c3' ? generateResourceHistory(30, 98, 90) : c.id === 'c1' ? generateResourceHistory(30, 85, 40) : generateResourceHistory(30, 40, 10),
+            memoryUsage: c.id === 'c2' ? generateResourceHistory(30, 95, 80) : c.id === 'c1' ? generateResourceHistory(30, 70, 50) : generateResourceHistory(30, 60, 40),
+            networkIO: {
+                in: c.id === 'c2' ? generateResourceHistory(30, 50, 20) : c.id === 'c3' ? generateResourceHistory(30,10,2) : generateResourceHistory(30, 5, 1),
+                out: c.id === 'c2' ? generateResourceHistory(30, 50, 20) : c.id === 'c3' ? generateResourceHistory(30,10,2) : generateResourceHistory(30, 20, 5)
+            }
+        }));
+    }
+    return containersData;
+};
+
+
+export const getPods = (): Pod[] => {
+    if (typeof window !== "undefined") {
+        return podsData.map(p => ({
+            ...p,
+            cpuUsage: p.id === 'p1' ? generateResourceHistory(30, 60, 20) : generateResourceHistory(30, 0, 0),
+            memoryUsage: p.id === 'p1' ? generateResourceHistory(30, 80, 60) : generateResourceHistory(30, 0, 0)
+        }));
+    }
+    return podsData;
+};
