@@ -6,7 +6,6 @@ import { ContainerList } from "@/components/dashboard/container-list";
 import { PodList } from "@/components/dashboard/pod-list";
 import { DetailsPanel } from "@/components/dashboard/details-panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getContainers, getPods } from "@/lib/mock-data";
 import type { Container, Pod } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,16 +22,28 @@ export function DashboardClient() {
   const [searchTerm, setSearchTerm] = React.useState("");
 
   React.useEffect(() => {
-    const containersData = getContainers();
-    const podsData = getPods();
-    setContainers(containersData);
-    setPods(podsData);
-    if (containersData.length > 0) {
-      setSelectedItem(containersData[0]);
-    } else if (podsData.length > 0) {
-      setSelectedItem(podsData[0]);
+    async function fetchData() {
+      try {
+        const [containersRes, podsRes] = await Promise.all([
+          fetch("/api/containers"),
+          fetch("/api/pods"),
+        ]);
+        const containersData: Container[] = await containersRes.json();
+        const podsData: Pod[] = await podsRes.json();
+        setContainers(containersData);
+        setPods(podsData);
+        if (containersData.length > 0) {
+          setSelectedItem(containersData[0]);
+        } else if (podsData.length > 0) {
+          setSelectedItem(podsData[0]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch data", err);
+      } finally {
+        setLoading(false);
+      }
     }
-    setLoading(false);
+    fetchData();
   }, []);
 
   const handleSelectItem = (item: Container | Pod) => {
