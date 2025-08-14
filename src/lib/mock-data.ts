@@ -1,18 +1,20 @@
 import type { Container, Pod } from "@/types";
 
 const generateResourceHistory = (points: number, max: number, min = 0) => {
+  if (typeof window === "undefined") return [];
   return Array.from({ length: points }, (_, i) => ({
     time: new Date(Date.now() - (points - i) * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     value: Math.floor(Math.random() * (max - min + 1)) + min,
   }));
 };
 
-export const containers: Container[] = [
+export const getContainers = (): Container[] => [
   {
     type: "container",
     id: "c1",
     name: "webapp-prod-1",
     status: "running",
+    health: "healthy",
     image: "nginx:latest",
     engine: "docker",
     cpuUsage: generateResourceHistory(30, 85, 40),
@@ -49,6 +51,7 @@ spec:
     id: "c2",
     name: "database-main",
     status: "running",
+    health: "unhealthy",
     image: "postgres:14",
     engine: "docker",
     cpuUsage: generateResourceHistory(30, 40, 10),
@@ -85,6 +88,7 @@ spec:
     id: "c3",
     name: "worker-queue",
     status: "error",
+    health: "unhealthy",
     image: "redis:alpine",
     engine: "rancher",
     cpuUsage: generateResourceHistory(30, 98, 90), // High CPU
@@ -118,6 +122,7 @@ spec:
     id: "c4",
     name: "legacy-app",
     status: "stopped",
+    health: "not-enabled",
     image: "ubuntu:18.04",
     engine: "podman",
     cpuUsage: generateResourceHistory(30, 0, 0),
@@ -135,7 +140,7 @@ spec:
   },
 ];
 
-export const pods: Pod[] = [
+export const getPods = (): Pod[] => [
   {
     type: "pod",
     id: "p1",

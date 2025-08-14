@@ -12,6 +12,8 @@ import {
 import { StatusBadge } from "./status-badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { HealthStatus } from "./health-status";
+import { Button } from "../ui/button";
 
 interface ContainerListProps {
   containers: Container[];
@@ -32,7 +34,9 @@ export function ContainerList({
             <TableHead>Name</TableHead>
             <TableHead>Image</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Health</TableHead>
             <TableHead>Engine</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -47,7 +51,15 @@ export function ContainerList({
               <TableCell>
                 <StatusBadge status={container.status} />
               </TableCell>
+              <TableCell>
+                <HealthStatus status={container.health} />
+              </TableCell>
               <TableCell className="capitalize">{container.engine}</TableCell>
+              <TableCell className="text-right">
+                <Button variant="ghost" size="sm" onClick={() => onSelect(container)}>
+                  View
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

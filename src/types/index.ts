@@ -3,11 +3,14 @@ export type ResourceUsage = {
   value: number;
 };
 
+export type HealthStatus = "healthy" | "unhealthy" | "not-enabled";
+
 export type Container = {
   type: "container";
   id: string;
   name: string;
   status: "running" | "stopped" | "paused" | "error";
+  health: HealthStatus;
   image: string;
   engine: "docker" | "rancher" | "podman";
   cpuUsage: ResourceUsage[];

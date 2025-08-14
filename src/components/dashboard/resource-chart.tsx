@@ -64,7 +64,7 @@ export function ResourceChart({
               axisLine={false}
               tickMargin={8}
               tickCount={5}
-              tickFormatter={(value) => value.slice(0, 5)}
+              tickFormatter={(value) => typeof value === 'string' ? value.slice(0, 5) : ''}
             />
             <YAxis
                 tickLine={false}
@@ -75,14 +75,14 @@ export function ResourceChart({
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent indicator="line" labelKey="time" />}
+              content={<ChartTooltipContent indicator="line" />}
             />
             <Area
-              dataKey={dataKey}
+              dataKey="value"
               type="natural"
-              fill={`var(--color-${dataKey})`}
+              fill={color}
               fillOpacity={0.4}
-              stroke={`var(--color-${dataKey})`}
+              stroke={color}
               stackId="a"
             />
           </AreaChart>
