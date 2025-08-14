@@ -10,6 +10,7 @@ import { getContainers, getPods } from "@/lib/mock-data";
 import type { Container, Pod } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export function DashboardClient() {
   const [containers, setContainers] = React.useState<Container[]>([]);
@@ -50,54 +51,56 @@ export function DashboardClient() {
   };
 
   return (
-    <MainLayout>
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 p-4 h-[calc(100vh-2rem)]">
-        <div className="xl:col-span-3 h-full flex flex-col">
-          <Tabs defaultValue="containers" className="flex-grow flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="containers">Containers</TabsTrigger>
-              <TabsTrigger value="pods">Pods</TabsTrigger>
-            </TabsList>
-            {loading ? (
-              <div className="flex-grow mt-4 overflow-hidden">
-                <Card>
-                  <CardContent className="p-6 space-y-4">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <>
-                <TabsContent
-                  value="containers"
-                  className="flex-grow mt-4 overflow-hidden"
-                >
-                  <ContainerList
-                    containers={containers}
-                    onSelect={handleSelectItem}
-                    selectedId={selectedItem?.id}
-                  />
-                </TabsContent>
-                <TabsContent
-                  value="pods"
-                  className="flex-grow mt-4 overflow-hidden"
-                >
-                  <PodList
-                    pods={pods}
-                    onSelect={handleSelectItem}
-                    selectedId={selectedItem?.id}
-                  />
-                </TabsContent>
-              </>
-            )}
-          </Tabs>
+    <SidebarProvider>
+      <MainLayout>
+        <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 p-4 h-[calc(100vh-2rem)]">
+          <div className="xl:col-span-3 h-full flex flex-col">
+            <Tabs defaultValue="containers" className="flex-grow flex flex-col">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="containers">Containers</TabsTrigger>
+                <TabsTrigger value="pods">Pods</TabsTrigger>
+              </TabsList>
+              {loading ? (
+                <div className="flex-grow mt-4 overflow-hidden">
+                  <Card>
+                    <CardContent className="p-6 space-y-4">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <>
+                  <TabsContent
+                    value="containers"
+                    className="flex-grow mt-4 overflow-hidden"
+                  >
+                    <ContainerList
+                      containers={containers}
+                      onSelect={handleSelectItem}
+                      selectedId={selectedItem?.id}
+                    />
+                  </TabsContent>
+                  <TabsContent
+                    value="pods"
+                    className="flex-grow mt-4 overflow-hidden"
+                  >
+                    <PodList
+                      pods={pods}
+                      onSelect={handleSelectItem}
+                      selectedId={selectedItem?.id}
+                    />
+                  </TabsContent>
+                </>
+              )}
+            </Tabs>
+          </div>
+          <div className="xl:col-span-2 h-full overflow-hidden">
+            <DetailsPanel item={selectedItem} onItemUpdate={handleUpdateItem} />
+          </div>
         </div>
-        <div className="xl:col-span-2 h-full overflow-hidden">
-          <DetailsPanel item={selectedItem} onItemUpdate={handleUpdateItem} />
-        </div>
-      </div>
-    </MainLayout>
+      </MainLayout>
+    </SidebarProvider>
   );
 }
