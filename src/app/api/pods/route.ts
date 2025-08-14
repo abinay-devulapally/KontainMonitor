@@ -2,6 +2,9 @@ import * as k8s from "@kubernetes/client-node";
 import { NextResponse } from "next/server";
 import type { Pod } from "@/types";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const kc = new k8s.KubeConfig();

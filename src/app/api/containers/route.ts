@@ -2,11 +2,37 @@ import Docker from "dockerode";
 import { NextResponse } from "next/server";
 import type { Container } from "@/types";
 
-const docker = new Docker({ socketPath: "/var/run/docker.sock" });
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const docker = new Docker(
+  process.env.DOCKER_HOST
+    ? undefined
+    : {
+        // Use Windows named pipe when on win32, otherwise Unix socket
+        socketPath:
+          process.platform === "win32"
+            ? "//./pipe/docker_engine"
+            : "/var/run/docker.sock",
+      }
+);
 
 export async function GET() {
   try {
-    const list = await docker.listContainers({ all: true });
+    const [list, version] = await Promise.all([
+      docker.listContainers({ all: true }),
+      docker
+        .version()
+        .catch(() => ({ Platform: { Name: "docker" } })) as any,
+    ]);
+
+    const engineName: Container["engine"] = (() => {
+      const name = version?.Platform?.Name?.toLowerCase() || "";
+      if (name.includes("rancher")) return "rancher";
+      if (name.includes("podman")) return "podman";
+      return "docker";
+    })();
+
     const containers: Container[] = await Promise.all(
       list.map(async (c: Docker.ContainerInfo) => {
         let config = "";
@@ -14,6 +40,7 @@ export async function GET() {
           const inspect = await docker.getContainer(c.Id).inspect();
           config = JSON.stringify(inspect.Config, null, 2);
         } catch {}
+
         const statusMap: Record<string, Container["status"]> = {
           running: "running",
           exited: "stopped",
@@ -26,6 +53,7 @@ export async function GET() {
           : c.Status?.includes("(unhealthy)")
           ? "unhealthy"
           : "not-enabled";
+
         return {
           type: "container",
           id: c.Id,
@@ -33,7 +61,7 @@ export async function GET() {
           status: statusMap[state] || "stopped",
           health,
           image: c.Image,
-          engine: "docker",
+          engine: engineName,
           cpuUsage: [],
           memoryUsage: [],
           networkIO: { in: [], out: [] },
