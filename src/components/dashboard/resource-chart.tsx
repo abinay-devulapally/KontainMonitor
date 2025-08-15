@@ -49,12 +49,12 @@ export function ResourceChart({
         <ChartContainer config={chartConfig} className="h-48 w-full">
           <AreaChart
             accessibilityLayer
-            data={data}
+            data={data.map((d) => ({ ...d, value: Math.max(0, d.value) }))}
             margin={{
               left: -20,
               right: 12,
               top: 5,
-              bottom: 5,
+              bottom: 20,
             }}
           >
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -64,14 +64,18 @@ export function ResourceChart({
               axisLine={false}
               tickMargin={8}
               tickCount={5}
-              tickFormatter={(value) => typeof value === 'string' ? value.slice(0, 5) : ''}
+              tickFormatter={(value) =>
+                typeof value === "string" ? value.slice(0, 5) : ""
+              }
+              label={{ value: "Time", position: "insideBottomRight", offset: -10 }}
             />
             <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                tickCount={3}
-                tickFormatter={(value) => `${value}${unit}`}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickCount={3}
+              tickFormatter={(value) => `${value}${unit}`}
+              label={{ value: unit, angle: -90, position: "insideLeft" }}
             />
             <ChartTooltip
               cursor={false}

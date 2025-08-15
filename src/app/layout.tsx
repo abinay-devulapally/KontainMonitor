@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -32,10 +33,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
-        <SidebarProvider>
-          {children}
-        </SidebarProvider>
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="dark">
+          <SidebarProvider>{children}</SidebarProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

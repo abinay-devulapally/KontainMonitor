@@ -8,8 +8,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 
-const Markdown = ReactMarkdown as any;
-
 interface Message {
   role: "user" | "model";
   content: string;
@@ -78,9 +76,11 @@ export function ChatPanel() {
                   : "bg-muted"
               )}
             >
-              <Markdown remarkPlugins={[remarkGfm]} className="prose prose-sm dark:prose-invert">
-                {m.content}
-              </Markdown>
+              <div className="prose prose-sm dark:prose-invert">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {m.content}
+                </ReactMarkdown>
+              </div>
             </div>
           </div>
         ))}
