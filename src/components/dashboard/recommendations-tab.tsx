@@ -8,7 +8,6 @@ import { getAiSuggestions } from "@/app/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Lightbulb, Terminal, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { SuggestResourceImprovementsOutput } from "@/ai/flows/suggest-resource-improvements";
 
 interface RecommendationsTabProps {
   item: Container | Pod;
@@ -17,17 +16,35 @@ interface RecommendationsTabProps {
 export function RecommendationsTab({ item }: RecommendationsTabProps) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [result, setResult] = React.useState<SuggestResourceImprovementsOutput | null>(null);
+  const [result, setResult] = React.useState<
+    { suggestions: { suggestion: string; rationale: string }[] } | null
+  >(null);
+
+  const apiKeyRef = React.useRef("");
+  const modelRef = React.useRef("gemini-2.0-flash");
+
+  React.useEffect(() => {
+    apiKeyRef.current = localStorage.getItem("aiApiKey") || "";
+    modelRef.current = localStorage.getItem("aiModel") || "gemini-2.0-flash";
+  }, []);
 
   const handleGetRecommendations = async () => {
     setLoading(true);
     setError(null);
     setResult(null);
     try {
-      const response = await getAiSuggestions(item);
+      const response = await getAiSuggestions(
+        item,
+        apiKeyRef.current,
+        modelRef.current
+      );
       setResult(response);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "An unknown error occurred.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "An unknown error occurred."
+      );
     } finally {
       setLoading(false);
     }
@@ -72,9 +89,11 @@ export function RecommendationsTab({ item }: RecommendationsTabProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground whitespace-pre-wrap font-body">
-                {result.suggestions}
-              </p>
+              <ul className="list-disc pl-4 space-y-2 text-muted-foreground">
+                {result.suggestions.map((s, idx) => (
+                  <li key={idx}>{s.suggestion}</li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
           <Card>
@@ -85,9 +104,11 @@ export function RecommendationsTab({ item }: RecommendationsTabProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground whitespace-pre-wrap font-body">
-                {result.rationale}
-              </p>
+              <ul className="list-disc pl-4 space-y-2 text-muted-foreground">
+                {result.suggestions.map((s, idx) => (
+                  <li key={idx}>{s.rationale}</li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         </div>

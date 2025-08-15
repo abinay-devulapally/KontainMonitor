@@ -35,7 +35,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "../ui/alert-dialog";
 import * as React from "react";
 
@@ -45,10 +44,10 @@ interface DetailsPanelProps {
 }
 
 export function DetailsPanel({ item, onItemUpdate }: DetailsPanelProps) {
-    const [isActionAlertOpen, setIsActionAlertOpen] = React.useState(false);
-    const [actionToConfirm, setActionToConfirm] = React.useState<(() => void) | null>(null);
-    const [alertTitle, setAlertTitle] = React.useState("");
-    const [alertDescription, setAlertDescription] = React.useState("");
+  const [isActionAlertOpen, setIsActionAlertOpen] = React.useState(false);
+  const [pendingAction, setPendingAction] = React.useState<string | null>(null);
+  const [alertTitle, setAlertTitle] = React.useState("");
+  const [alertDescription, setAlertDescription] = React.useState("");
 
 
   if (!item) {
@@ -63,25 +62,43 @@ export function DetailsPanel({ item, onItemUpdate }: DetailsPanelProps) {
   }
 
   const handleAction = (
-    actionFn: () => Partial<Container | Pod>,
+    action: string,
     title: string,
     description: string
   ) => {
-    setActionToConfirm(() => () => {
-        const updates = actionFn();
-        onItemUpdate({ ...item, ...updates } as Container | Pod);
-    });
+    setPendingAction(action);
     setAlertTitle(title);
     setAlertDescription(description);
     setIsActionAlertOpen(true);
   };
-  
-  const confirmAction = () => {
-    if (actionToConfirm) {
-        actionToConfirm();
+
+  const confirmAction = async () => {
+    if (!item || !pendingAction) return;
+    try {
+      if (item.type === "container") {
+        await fetch(`/api/containers/${item.id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: pendingAction }),
+        });
+        const res = await fetch(`/api/containers/${item.id}`);
+        const updated = (await res.json()) as Container;
+        onItemUpdate(updated);
+      } else {
+        const statusMap: Record<string, Pod["status"]> = {
+          start: "running",
+          stop: "stopped",
+          restart: "running",
+          delete: "stopped",
+        };
+        onItemUpdate({ ...item, status: statusMap[pendingAction] || item.status });
+      }
+    } catch (err) {
+      console.error("Failed to run action", err);
+    } finally {
+      setIsActionAlertOpen(false);
+      setPendingAction(null);
     }
-    setIsActionAlertOpen(false);
-    setActionToConfirm(null);
   };
 
 
@@ -90,19 +107,31 @@ export function DetailsPanel({ item, onItemUpdate }: DetailsPanelProps) {
 
   const controlButtons = (
     <div className="flex gap-2">
-      <Button variant="ghost" size="icon" aria-label="Start" onClick={() => handleAction(() => ({ status: 'running' }), "Start Container?", `Are you sure you want to start ${item.name}?`)} disabled={item.status === 'running'}>
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={item.status === "paused" ? "Resume" : "Start"}
+        onClick={() =>
+          handleAction(
+            item.status === "paused" ? "unpause" : "start",
+            item.status === "paused" ? "Resume Container?" : "Start Container?",
+            `Are you sure you want to ${item.status === "paused" ? "resume" : "start"} ${item.name}?`
+          )
+        }
+        disabled={item.status === "running"}
+      >
         <Play className="h-4 w-4 text-green-500" />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Pause" onClick={() => handleAction(() => ({ status: 'paused' }), "Pause Container?", `Are you sure you want to pause ${item.name}?`)} disabled={item.status !== 'running'}>
+      <Button variant="ghost" size="icon" aria-label="Pause" onClick={() => handleAction("pause", "Pause Container?", `Are you sure you want to pause ${item.name}?`)} disabled={item.status !== 'running'}>
         <Pause className="h-4 w-4 text-yellow-500" />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Stop" onClick={() => handleAction(() => ({ status: 'stopped' }), "Stop Container?", `Are you sure you want to stop ${item.name}?`)} disabled={item.status === 'stopped'}>
+      <Button variant="ghost" size="icon" aria-label="Stop" onClick={() => handleAction("stop", "Stop Container?", `Are you sure you want to stop ${item.name}?`)} disabled={item.status === 'stopped'}>
         <StopCircle className="h-4 w-4 text-red-500" />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Restart" onClick={() => handleAction(() => ({ status: 'running' }), "Restart Container?", `Are you sure you want to restart ${item.name}?`)}>
+      <Button variant="ghost" size="icon" aria-label="Restart" onClick={() => handleAction("restart", "Restart Container?", `Are you sure you want to restart ${item.name}?`)}>
         <RefreshCw className="h-4 w-4 text-blue-500" />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Delete" onClick={() => handleAction(() => ({ status: 'stopped' }), "Delete Container?", `Are you sure you want to delete ${item.name}? This action cannot be undone.`)}>
+      <Button variant="ghost" size="icon" aria-label="Delete" onClick={() => handleAction("delete", "Delete Container?", `Are you sure you want to delete ${item.name}? This action cannot be undone.`)}>
         <Trash2 className="h-4 w-4 text-gray-500" />
       </Button>
     </div>
@@ -110,16 +139,16 @@ export function DetailsPanel({ item, onItemUpdate }: DetailsPanelProps) {
   
     const podControlButtons = (
     <div className="flex gap-2">
-      <Button variant="ghost" size="icon" aria-label="Start Pod" onClick={() => handleAction(() => ({ status: 'running' }), "Start Pod?", `Are you sure you want to start ${item.name}?`)} disabled={item.status === 'running'}>
+      <Button variant="ghost" size="icon" aria-label="Start Pod" onClick={() => handleAction("start", "Start Pod?", `Are you sure you want to start ${item.name}?`)} disabled={item.status === 'running'}>
         <Play className="h-4 w-4 text-green-500" />
       </Button>
-       <Button variant="ghost" size="icon" aria-label="Stop Pod" onClick={() => handleAction(() => ({ status: 'stopped' }), "Stop Pod?", `Are you sure you want to stop ${item.name}?`)} disabled={item.status === 'stopped' || item.status === 'failed'}>
+       <Button variant="ghost" size="icon" aria-label="Stop Pod" onClick={() => handleAction("stop", "Stop Pod?", `Are you sure you want to stop ${item.name}?`)} disabled={item.status === 'stopped' || item.status === 'failed'}>
         <StopCircle className="h-4 w-4 text-red-500" />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Restart Pod" onClick={() => handleAction(() => ({ status: 'running' }), "Restart Pod?", `Are you sure you want to restart ${item.name}?`)}>
+      <Button variant="ghost" size="icon" aria-label="Restart Pod" onClick={() => handleAction("restart", "Restart Pod?", `Are you sure you want to restart ${item.name}?`)}>
         <RefreshCw className="h-4 w-4 text-blue-500" />
       </Button>
-       <Button variant="ghost" size="icon" aria-label="Delete Pod" onClick={() => handleAction(() => ({ status: 'stopped' }), "Delete Pod?", `Are you sure you want to delete ${item.name}? This action cannot be undone.`)}>
+       <Button variant="ghost" size="icon" aria-label="Delete Pod" onClick={() => handleAction("delete", "Delete Pod?", `Are you sure you want to delete ${item.name}? This action cannot be undone.`)}>
         <Trash2 className="h-4 w-4 text-gray-500" />
       </Button>
     </div>

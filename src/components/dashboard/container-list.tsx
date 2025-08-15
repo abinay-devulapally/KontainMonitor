@@ -10,7 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "./status-badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { HealthStatus } from "./health-status";
 import { Button } from "../ui/button";
@@ -27,8 +26,8 @@ export function ContainerList({
   selectedId,
 }: ContainerListProps) {
   return (
-    <ScrollArea className="h-[calc(100vh-10rem)] rounded-md border">
-      <Table>
+    <div className="h-[calc(100vh-10rem)] rounded-md border overflow-auto">
+      <Table className="w-full min-w-[900px]">
         <TableHeader className="sticky top-0 bg-background/95 backdrop-blur-sm">
           <TableRow>
             <TableHead>Name</TableHead>
@@ -46,7 +45,7 @@ export function ContainerList({
               onClick={() => onSelect(container)}
               className={cn("cursor-pointer", selectedId === container.id && "bg-accent/50")}
             >
-              <TableCell className="font-medium">{container.name}</TableCell>
+              <TableCell className="font-medium truncate max-w-[200px]">{container.name}</TableCell>
               <TableCell className="truncate max-w-xs">{container.image}</TableCell>
               <TableCell>
                 <StatusBadge status={container.status} />
@@ -56,7 +55,14 @@ export function ContainerList({
               </TableCell>
               <TableCell className="capitalize">{container.engine}</TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="sm" onClick={() => onSelect(container)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect(container);
+                  }}
+                >
                   View
                 </Button>
               </TableCell>
@@ -64,6 +70,6 @@ export function ContainerList({
           ))}
         </TableBody>
       </Table>
-    </ScrollArea>
+    </div>
   );
 }
