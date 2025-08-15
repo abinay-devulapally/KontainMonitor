@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github.css";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -57,8 +59,20 @@ export function ChatPanel() {
     }
   };
 
+  const startNewChat = async () => {
+    setMessages([]);
+    try {
+      await fetch("/api/chat/history", { method: "DELETE" });
+    } catch {}
+  };
+
   return (
     <div className="flex flex-col h-full">
+      <div className="flex justify-between mb-2">
+        <Button variant="outline" size="sm" onClick={startNewChat}>
+          New Chat
+        </Button>
+      </div>
       <ScrollArea className="flex-grow p-4 border rounded-md mb-4">
         {messages.map((m, idx) => (
           <div
@@ -77,7 +91,10 @@ export function ChatPanel() {
               )}
             >
               <div className="prose prose-sm dark:prose-invert">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeHighlight]}
+                >
                   {m.content}
                 </ReactMarkdown>
               </div>

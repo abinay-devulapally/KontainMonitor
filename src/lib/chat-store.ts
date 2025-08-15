@@ -28,3 +28,8 @@ export async function appendHistory(messages: ChatMessage[]) {
   await fs.promises.mkdir(path.dirname(historyPath), { recursive: true });
   await fs.promises.writeFile(historyPath, JSON.stringify(history, null, 2));
 }
+
+export async function clearHistory() {
+  await fs.promises.mkdir(path.dirname(historyPath), { recursive: true });
+  await fs.promises.writeFile(historyPath, JSON.stringify([], null, 2));
+}
