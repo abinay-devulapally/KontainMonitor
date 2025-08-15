@@ -20,13 +20,16 @@ import {
   Boxes,
   Settings,
   CircleHelp,
+  MessageSquare,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { Logo } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const { isMobile } = useSidebar();
+  useSidebar();
   const [mounted, setMounted] = React.useState(false);
+  const pathname = usePathname();
 
   React.useEffect(() => {
     setMounted(true);
@@ -45,7 +48,11 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
           <SidebarContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive tooltip="Dashboard">
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Dashboard"
+                  isActive={pathname === "/"}
+                >
                   <Link href="/">
                     <LayoutDashboard />
                     <span>Dashboard</span>
@@ -53,18 +60,38 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Containers">
-                  <Link href="/">
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Containers"
+                  isActive={pathname.startsWith("/containers")}
+                >
+                  <Link href="/containers">
                     <Box />
                     <span>Containers</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Pods">
-                  <Link href="/">
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Pods"
+                  isActive={pathname.startsWith("/pods")}
+                >
+                  <Link href="/pods">
                     <Boxes />
                     <span>Pods</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Chat"
+                  isActive={pathname.startsWith("/chat")}
+                >
+                  <Link href="/chat">
+                    <MessageSquare />
+                    <span>Chat</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -74,7 +101,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Help">
-                  <Link href="#">
+                  <Link href="/help">
                     <CircleHelp />
                     <span>Help</span>
                   </Link>
@@ -82,7 +109,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Settings">
-                  <Link href="#">
+                  <Link href="/settings">
                     <Settings />
                     <span>Settings</span>
                   </Link>
@@ -96,7 +123,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       <SidebarInset>
         <header className="flex items-center justify-between p-2 border-b">
           {mounted && <SidebarTrigger />}
-          <Button variant="outline">Feedback</Button>
+          <Link href="https://github.com/" target="_blank" rel="noreferrer">
+            <Button variant="outline">Feedback</Button>
+          </Link>
         </header>
         {children}
       </SidebarInset>

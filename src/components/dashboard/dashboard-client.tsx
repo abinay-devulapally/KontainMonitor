@@ -6,14 +6,17 @@ import { ContainerList } from "@/components/dashboard/container-list";
 import { PodList } from "@/components/dashboard/pod-list";
 import { DetailsPanel } from "@/components/dashboard/details-panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getContainers, getPods } from "@/lib/mock-data";
 import type { Container, Pod } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "../ui/input";
 import { Search } from "lucide-react";
 
-export function DashboardClient() {
+export function DashboardClient({
+  initialTab = "containers",
+}: {
+  initialTab?: "containers" | "pods";
+}) {
   const [containers, setContainers] = React.useState<Container[]>([]);
   const [pods, setPods] = React.useState<Pod[]>([]);
   const [selectedItem, setSelectedItem] = React.useState<
@@ -23,19 +26,44 @@ export function DashboardClient() {
   const [searchTerm, setSearchTerm] = React.useState("");
 
   React.useEffect(() => {
-    const containersData = getContainers();
-    const podsData = getPods();
-    setContainers(containersData);
-    setPods(podsData);
-    if (containersData.length > 0) {
-      setSelectedItem(containersData[0]);
-    } else if (podsData.length > 0) {
-      setSelectedItem(podsData[0]);
+    async function fetchData() {
+      try {
+        const [containersRes, podsRes] = await Promise.all([
+          fetch("/api/containers"),
+          fetch("/api/pods"),
+        ]);
+        const containersData: Container[] = await containersRes.json();
+        const podsData: Pod[] = await podsRes.json();
+        setContainers(containersData);
+        setPods(podsData);
+        if (containersData.length > 0) {
+          setSelectedItem(containersData[0]);
+        } else if (podsData.length > 0) {
+          setSelectedItem(podsData[0]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch data", err);
+      } finally {
+        setLoading(false);
+      }
     }
-    setLoading(false);
+    fetchData();
   }, []);
 
-  const handleSelectItem = (item: Container | Pod) => {
+  const handleSelectItem = async (item: Container | Pod) => {
+    if (item.type === "container") {
+      try {
+        const res = await fetch(`/api/containers/${item.id}`);
+        const detailed = (await res.json()) as Container;
+        setSelectedItem(detailed);
+        setContainers((prev) =>
+          prev.map((c) => (c.id === detailed.id ? detailed : c))
+        );
+        return;
+      } catch (err) {
+        console.error("Failed to load container details", err);
+      }
+    }
     setSelectedItem(item);
   };
 
@@ -64,7 +92,7 @@ export function DashboardClient() {
     <MainLayout>
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 p-4 h-[calc(100vh-2rem)]">
         <div className="xl:col-span-3 h-full flex flex-col">
-          <Tabs defaultValue="containers" className="flex-grow flex flex-col">
+          <Tabs defaultValue={initialTab} className="flex-grow flex flex-col">
             <div className="flex justify-between items-center gap-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="containers">Containers</TabsTrigger>
