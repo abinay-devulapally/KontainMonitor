@@ -46,7 +46,7 @@ export function ContainerList({
               onClick={() => onSelect(container)}
               className={cn("cursor-pointer", selectedId === container.id && "bg-accent/50")}
             >
-              <TableCell className="font-medium">{container.name}</TableCell>
+              <TableCell className="font-medium truncate max-w-[200px]">{container.name}</TableCell>
               <TableCell className="truncate max-w-xs">{container.image}</TableCell>
               <TableCell>
                 <StatusBadge status={container.status} />

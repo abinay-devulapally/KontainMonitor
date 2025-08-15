@@ -74,7 +74,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Help">
-                  <Link href="#">
+                  <Link href="/help">
                     <CircleHelp />
                     <span>Help</span>
                   </Link>
@@ -82,7 +82,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild tooltip="Settings">
-                  <Link href="#">
+                  <Link href="/settings">
                     <Settings />
                     <span>Settings</span>
                   </Link>
@@ -96,7 +96,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       <SidebarInset>
         <header className="flex items-center justify-between p-2 border-b">
           {mounted && <SidebarTrigger />}
-          <Button variant="outline">Feedback</Button>
+          <Link href="https://github.com/" target="_blank" rel="noreferrer">
+            <Button variant="outline">Feedback</Button>
+          </Link>
         </header>
         {children}
       </SidebarInset>

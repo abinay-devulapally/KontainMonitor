@@ -24,6 +24,11 @@ export async function getAiSuggestions(item: Container | Pod) {
 
   } catch (error) {
     console.error("Error getting AI suggestions:", error);
-    throw new Error("Failed to get AI suggestions. Please check the server logs.");
+    return {
+      suggestions:
+        "Unable to retrieve AI suggestions. Review resource usage and configuration manually.",
+      rationale:
+        "The AI service is unavailable or misconfigured. Check server logs and API keys.",
+    };
   }
 }

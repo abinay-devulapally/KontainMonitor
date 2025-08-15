@@ -46,7 +46,20 @@ export function DashboardClient() {
     fetchData();
   }, []);
 
-  const handleSelectItem = (item: Container | Pod) => {
+  const handleSelectItem = async (item: Container | Pod) => {
+    if (item.type === "container") {
+      try {
+        const res = await fetch(`/api/containers/${item.id}`);
+        const detailed = (await res.json()) as Container;
+        setSelectedItem(detailed);
+        setContainers((prev) =>
+          prev.map((c) => (c.id === detailed.id ? detailed : c))
+        );
+        return;
+      } catch (err) {
+        console.error("Failed to load container details", err);
+      }
+    }
     setSelectedItem(item);
   };
 
