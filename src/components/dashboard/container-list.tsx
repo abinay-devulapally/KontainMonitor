@@ -27,8 +27,8 @@ export function ContainerList({
   selectedId,
 }: ContainerListProps) {
   return (
-    <ScrollArea className="h-[calc(100vh-10rem)] rounded-md border">
-      <Table>
+    <ScrollArea className="h-[calc(100vh-10rem)] rounded-md border overflow-auto">
+      <Table className="min-w-full">
         <TableHeader className="sticky top-0 bg-background/95 backdrop-blur-sm">
           <TableRow>
             <TableHead>Name</TableHead>
@@ -56,7 +56,14 @@ export function ContainerList({
               </TableCell>
               <TableCell className="capitalize">{container.engine}</TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="sm" onClick={() => onSelect(container)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect(container);
+                  }}
+                >
                   View
                 </Button>
               </TableCell>

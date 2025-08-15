@@ -1,27 +1,43 @@
 "use server";
 
-import { suggestResourceImprovements } from "@/ai/flows/suggest-resource-improvements";
 import type { Container, Pod } from "@/types";
 
-export async function getAiSuggestions(item: Container | Pod) {
+export async function getAiSuggestions(
+  item: Container | Pod,
+  apiKey: string,
+  model: string
+) {
   try {
+    if (!apiKey) {
+      throw new Error("Missing API key");
+    }
     const isContainer = item.type === "container";
-    
-    // Create a summary of resource usage
-    const resourceUsageSummary = `
-    CPU Usage (last 30 mins, %): ${item.cpuUsage.map(u => u.value).join(", ")}
-    Memory Usage (last 30 mins, %): ${item.memoryUsage.map(u => u.value).join(", ")}
-    `;
+    const resourceUsageSummary = `CPU: ${item.cpuUsage
+      .map((u) => u.value)
+      .join(", ")}\nMemory: ${item.memoryUsage
+      .map((u) => u.value)
+      .join(", ")}`;
 
-    const input = {
-      containerConfiguration: isContainer ? item.config : "N/A - This is a Pod",
-      podConfiguration: isContainer ? (item as Container).podId ? "See container config" : "N/A" : item.config,
-      resourceUsageData: resourceUsageSummary,
-    };
+    const prompt = `You are an expert DevOps assistant. Analyze the configuration and usage and return JSON with keys "suggestions" and "rationale".\nContainer Config: ${
+      isContainer ? item.config : "N/A"
+    }\nPod Config: ${isContainer ? "N/A" : item.config}\nUsage: ${resourceUsageSummary}`;
 
-    const result = await suggestResourceImprovements(input);
-    return result;
-
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json" },
+        }),
+      }
+    );
+    const data = await res.json();
+    const text =
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      '{"suggestions":"No suggestions","rationale":"No rationale"}';
+    return JSON.parse(text);
   } catch (error) {
     console.error("Error getting AI suggestions:", error);
     return {

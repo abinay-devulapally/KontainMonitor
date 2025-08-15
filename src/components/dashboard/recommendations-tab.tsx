@@ -19,15 +19,31 @@ export function RecommendationsTab({ item }: RecommendationsTabProps) {
   const [error, setError] = React.useState<string | null>(null);
   const [result, setResult] = React.useState<SuggestResourceImprovementsOutput | null>(null);
 
+  const apiKeyRef = React.useRef("");
+  const modelRef = React.useRef("gemini-2.0-flash");
+
+  React.useEffect(() => {
+    apiKeyRef.current = localStorage.getItem("aiApiKey") || "";
+    modelRef.current = localStorage.getItem("aiModel") || "gemini-2.0-flash";
+  }, []);
+
   const handleGetRecommendations = async () => {
     setLoading(true);
     setError(null);
     setResult(null);
     try {
-      const response = await getAiSuggestions(item);
+      const response = await getAiSuggestions(
+        item,
+        apiKeyRef.current,
+        modelRef.current
+      );
       setResult(response);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "An unknown error occurred.");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "An unknown error occurred."
+      );
     } finally {
       setLoading(false);
     }

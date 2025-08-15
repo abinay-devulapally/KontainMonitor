@@ -19,12 +19,11 @@ const docker = new Docker(
 
 export async function GET() {
   try {
-    const [list, version] = await Promise.all([
+    const [list, versionRaw] = await Promise.all([
       docker.listContainers({ all: true }),
-      docker
-        .version()
-        .catch(() => ({ Platform: { Name: "docker" } })) as any,
+      docker.version().catch(() => ({ Platform: { Name: "docker" } })),
     ]);
+    const version = versionRaw as { Platform: { Name?: string } };
 
     const engineName: Container["engine"] = (() => {
       const name = version?.Platform?.Name?.toLowerCase() || "";

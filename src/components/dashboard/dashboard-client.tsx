@@ -12,7 +12,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "../ui/input";
 import { Search } from "lucide-react";
 
-export function DashboardClient() {
+export function DashboardClient({
+  initialTab = "containers",
+}: {
+  initialTab?: "containers" | "pods";
+}) {
   const [containers, setContainers] = React.useState<Container[]>([]);
   const [pods, setPods] = React.useState<Pod[]>([]);
   const [selectedItem, setSelectedItem] = React.useState<
@@ -88,7 +92,7 @@ export function DashboardClient() {
     <MainLayout>
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 p-4 h-[calc(100vh-2rem)]">
         <div className="xl:col-span-3 h-full flex flex-col">
-          <Tabs defaultValue="containers" className="flex-grow flex flex-col">
+          <Tabs defaultValue={initialTab} className="flex-grow flex flex-col">
             <div className="flex justify-between items-center gap-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="containers">Containers</TabsTrigger>

@@ -21,8 +21,8 @@ interface PodListProps {
 
 export function PodList({ pods, onSelect, selectedId }: PodListProps) {
   return (
-    <ScrollArea className="h-[calc(100vh-10rem)] rounded-md border">
-      <Table>
+    <ScrollArea className="h-[calc(100vh-10rem)] rounded-md border overflow-auto">
+      <Table className="min-w-full">
         <TableHeader className="sticky top-0 bg-background/95 backdrop-blur-sm">
           <TableRow>
             <TableHead>Name</TableHead>

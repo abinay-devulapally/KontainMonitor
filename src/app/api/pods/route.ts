@@ -10,9 +10,11 @@ export async function GET() {
     const kc = new k8s.KubeConfig();
     kc.loadFromDefault();
     const api = kc.makeApiClient(k8s.CoreV1Api);
-    const res = await api.listPodForAllNamespaces();
-    const items = (res as any).body?.items ?? (res as any).items ?? [];
-    const pods: Pod[] = items.map((p: k8s.V1Pod) => {
+      // The client library types differ across versions; fall back to any for compatibility
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res: any = await api.listPodForAllNamespaces();
+      const items: k8s.V1Pod[] = res.body?.items ?? res.items ?? [];
+      const pods: Pod[] = items.map((p) => {
       const phase = p.status?.phase?.toLowerCase() || "pending";
       const phaseMap: Record<string, Pod["status"]> = {
         running: "running",
