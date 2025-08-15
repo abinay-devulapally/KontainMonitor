@@ -72,14 +72,20 @@ export async function GET(
     }
 
     const now = Date.now();
-    const cpuUsage = Array.from({ length: 5 }).map((_, i) => ({
-      time: new Date(now - (4 - i) * 60000).toISOString(),
-      value: Number((cpuPercent + (Math.random() - 0.5) * 2).toFixed(2)),
-    }));
-    const memoryUsage = Array.from({ length: 5 }).map((_, i) => ({
-      time: new Date(now - (4 - i) * 60000).toISOString(),
-      value: Number((memPercent + (Math.random() - 0.5) * 2).toFixed(2)),
-    }));
+    const cpuUsage = Array.from({ length: 5 }).map((_, i) => {
+      const val = cpuPercent + (Math.random() - 0.5) * 2;
+      return {
+        time: new Date(now - (4 - i) * 60000).toISOString(),
+        value: Number(Math.max(0, Math.min(100, val)).toFixed(2)),
+      };
+    });
+    const memoryUsage = Array.from({ length: 5 }).map((_, i) => {
+      const val = memPercent + (Math.random() - 0.5) * 2;
+      return {
+        time: new Date(now - (4 - i) * 60000).toISOString(),
+        value: Number(Math.max(0, Math.min(100, val)).toFixed(2)),
+      };
+    });
 
     const result: Container = {
       type: "container",

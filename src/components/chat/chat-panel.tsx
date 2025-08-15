@@ -4,10 +4,16 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { cn } from "@/lib/utils";
+
+const Markdown = ReactMarkdown as any;
 
 interface Message {
   role: "user" | "model";
   content: string;
+  timestamp?: string;
 }
 
 export function ChatPanel() {
@@ -19,6 +25,10 @@ export function ChatPanel() {
   React.useEffect(() => {
     setApiKey(localStorage.getItem("aiApiKey") || "");
     setModel(localStorage.getItem("aiModel") || "gemini-2.0-flash");
+    fetch("/api/chat/history")
+      .then((res) => res.json())
+      .then((data: Message[]) => setMessages(data))
+      .catch(() => {});
   }, []);
 
   const sendMessage = async () => {
@@ -53,11 +63,25 @@ export function ChatPanel() {
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-grow p-4 border rounded-md mb-4">
         {messages.map((m, idx) => (
-          <div key={idx} className="mb-2">
-            <span className={m.role === "user" ? "font-semibold" : "text-purple-400"}>
-              {m.role === "user" ? "You" : "AI"}:
-            </span>{" "}
-            {m.content}
+          <div
+            key={idx}
+            className={cn(
+              "mb-4 flex",
+              m.role === "user" ? "justify-end" : "justify-start"
+            )}
+          >
+            <div
+              className={cn(
+                "rounded-lg px-3 py-2 max-w-[80%] whitespace-pre-wrap",
+                m.role === "user"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted"
+              )}
+            >
+              <Markdown remarkPlugins={[remarkGfm]} className="prose prose-sm dark:prose-invert">
+                {m.content}
+              </Markdown>
+            </div>
           </div>
         ))}
       </ScrollArea>

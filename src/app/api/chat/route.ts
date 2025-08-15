@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
+import { appendHistory } from "@/lib/chat-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 interface ChatMessage {
-  role: string;
+  role: "user" | "model";
   content: string;
 }
 
@@ -35,6 +36,13 @@ export async function POST(req: Request) {
     const text =
       data.candidates?.[0]?.content?.parts?.map((p: { text: string }) => p.text).join(" ") ||
       "";
+
+    const userMsg = messages[messages.length - 1];
+    await appendHistory([
+      { ...userMsg, timestamp: new Date().toISOString() },
+      { role: "model", content: text, timestamp: new Date().toISOString() },
+    ]);
+
     return NextResponse.json({ reply: text });
   } catch (err) {
     console.error("Chat error", err);

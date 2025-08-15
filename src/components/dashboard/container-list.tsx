@@ -10,7 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "./status-badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { HealthStatus } from "./health-status";
 import { Button } from "../ui/button";
@@ -27,8 +26,8 @@ export function ContainerList({
   selectedId,
 }: ContainerListProps) {
   return (
-    <ScrollArea className="h-[calc(100vh-10rem)] rounded-md border overflow-auto">
-      <Table className="min-w-full">
+    <div className="h-[calc(100vh-10rem)] rounded-md border overflow-auto">
+      <Table className="w-full min-w-[900px]">
         <TableHeader className="sticky top-0 bg-background/95 backdrop-blur-sm">
           <TableRow>
             <TableHead>Name</TableHead>
@@ -71,6 +70,6 @@ export function ContainerList({
           ))}
         </TableBody>
       </Table>
-    </ScrollArea>
+    </div>
   );
 }

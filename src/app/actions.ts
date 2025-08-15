@@ -2,11 +2,16 @@
 
 import type { Container, Pod } from "@/types";
 
+interface AiSuggestion {
+  suggestion: string;
+  rationale: string;
+}
+
 export async function getAiSuggestions(
   item: Container | Pod,
   apiKey: string,
   model: string
-) {
+): Promise<{ suggestions: AiSuggestion[] }> {
   try {
     if (!apiKey) {
       throw new Error("Missing API key");
@@ -18,7 +23,7 @@ export async function getAiSuggestions(
       .map((u) => u.value)
       .join(", ")}`;
 
-    const prompt = `You are an expert DevOps assistant. Analyze the configuration and usage and return JSON with keys "suggestions" and "rationale".\nContainer Config: ${
+    const prompt = `You are an expert DevOps assistant. Analyze the configuration and usage and return JSON of the form {"suggestions":[{"suggestion":"text","rationale":"text"}]}.\nContainer Config: ${
       isContainer ? item.config : "N/A"
     }\nPod Config: ${isContainer ? "N/A" : item.config}\nUsage: ${resourceUsageSummary}`;
 
@@ -36,15 +41,30 @@ export async function getAiSuggestions(
     const data = await res.json();
     const text =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      '{"suggestions":"No suggestions","rationale":"No rationale"}';
-    return JSON.parse(text);
+      '{"suggestions":[{"suggestion":"No suggestions","rationale":"No rationale"}]}' ;
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed.suggestions)) {
+      return { suggestions: parsed.suggestions };
+    }
+    return {
+      suggestions: [
+        {
+          suggestion: parsed.suggestions || "No suggestions",
+          rationale: parsed.rationale || "",
+        },
+      ],
+    };
   } catch (error) {
     console.error("Error getting AI suggestions:", error);
     return {
-      suggestions:
-        "Unable to retrieve AI suggestions. Review resource usage and configuration manually.",
-      rationale:
-        "The AI service is unavailable or misconfigured. Check server logs and API keys.",
+      suggestions: [
+        {
+          suggestion:
+            "Unable to retrieve AI suggestions. Review resource usage and configuration manually.",
+          rationale:
+            "The AI service is unavailable or misconfigured. Check server logs and API keys.",
+        },
+      ],
     };
   }
 }
