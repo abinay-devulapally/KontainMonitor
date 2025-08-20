@@ -27,8 +27,8 @@ export function MarkdownMessage({ children }: { children: string }) {
           <button
             type="button"
             className={cn(
-              "rounded border px-2 py-0.5",
-              copied ? "bg-primary text-primary-foreground" : "bg-background"
+              "rounded border px-2 py-0.5 transition-all duration-200 hover:scale-105",
+              copied ? "bg-primary text-primary-foreground shadow-md" : "bg-background hover:bg-accent"
             )}
             onClick={async () => {
               await navigator.clipboard.writeText(raw);
@@ -37,11 +37,11 @@ export function MarkdownMessage({ children }: { children: string }) {
             }}
             aria-label="Copy code"
           >
-            {copied ? "Copied" : "Copy"}
+            {copied ? "Copied ✓" : "Copy"}
           </button>
         </div>
-        <pre className={cn("overflow-auto bg-muted p-3 font-code text-sm", className)}>
-          <code className={cn(className)} {...props}>
+        <pre className={cn("overflow-x-auto bg-muted p-3 font-code text-sm max-w-full", className)}>
+          <code className={cn("whitespace-pre", className)} {...props}>
             {codeChildren}
           </code>
         </pre>
@@ -50,6 +50,14 @@ export function MarkdownMessage({ children }: { children: string }) {
   };
 
   const components = {
+    p({ className, children, ...props }: React.ComponentPropsWithoutRef<"p">) {
+      // Prevent p tags from wrapping block elements
+      return (
+        <div className={cn("my-3", className)} {...props}>
+          {children}
+        </div>
+      );
+    },
     a({ className, ...props }: React.ComponentPropsWithoutRef<"a">) {
       return (
         <a

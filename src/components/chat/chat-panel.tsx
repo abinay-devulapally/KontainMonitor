@@ -46,6 +46,7 @@ export function ChatPanel() {
   const [composer, setComposer] = React.useState("");
   const [isHydrated, setIsHydrated] = React.useState(false);
   const [isSending, setIsSending] = React.useState(false);
+  const [isStreaming, setIsStreaming] = React.useState(false);
   const [model, setModel] = React.useState("gemini-2.0-flash");
   const [apiKey, setApiKey] = React.useState("");
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -108,6 +109,7 @@ export function ChatPanel() {
     setComposer("");
     try {
       setIsSending(true);
+      setIsStreaming(false);
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       // Ensure we have a session id; if none selected, create one on first send
@@ -153,6 +155,7 @@ export function ChatPanel() {
       let sessionSet = false;
       // push placeholder assistant message for streaming
       setMessages((prev) => [...prev, { role: "model", content: "" }]);
+      setIsStreaming(true);
       const appendDelta = (delta: string) => {
         if (!delta) return;
         setMessages((prev) => {
@@ -217,6 +220,7 @@ export function ChatPanel() {
       }
     } finally {
       setIsSending(false);
+      setIsStreaming(false);
       abortRef.current = null;
     }
   }
@@ -236,6 +240,7 @@ export function ChatPanel() {
     setComposer("");
     try {
       setIsSending(true);
+      setIsStreaming(false);
       const ctrl = new AbortController();
       abortRef.current = ctrl;
       let res = await fetch("/api/chat", {
@@ -267,6 +272,7 @@ export function ChatPanel() {
       let remainder = "";
       // placeholder
       setMessages((prev) => [...prev, { role: "model", content: "" }]);
+      setIsStreaming(true);
       const appendDelta = (delta: string) => {
         if (!delta) return;
         setMessages((prev) => {
@@ -306,6 +312,7 @@ export function ChatPanel() {
       setMessages((prev) => [...prev, { role: "model", content: "Error regenerating" }]);
     } finally {
       setIsSending(false);
+      setIsStreaming(false);
       abortRef.current = null;
     }
   }
@@ -350,12 +357,16 @@ export function ChatPanel() {
       {/* Sidebar */}
       <div className="w-72 border-r flex flex-col">
         <div className="p-2 border-b space-y-2">
-          <Button className="w-full" size="sm" onClick={async () => {
-            const created = await newSession();
-            setSessions((prev) => [created, ...prev]);
-            setActiveSessionId(created.id);
-            setMessages([]);
-          }}>
+          <Button 
+            className="w-full transition-all duration-200 hover:scale-[1.02] shadow-sm hover:shadow-md" 
+            size="sm" 
+            onClick={async () => {
+              const created = await newSession();
+              setSessions((prev) => [created, ...prev]);
+              setActiveSessionId(created.id);
+              setMessages([]);
+            }}
+          >
             <Plus className="h-4 w-4 mr-1" /> New Chat
           </Button>
           <Input
@@ -365,16 +376,16 @@ export function ChatPanel() {
             className="h-8"
           />
         </div>
-        <ScrollArea className="flex-1 p-2">
+        <ScrollArea className="flex-1 p-2 chat-scroll">
           <div className="flex flex-col gap-1 pr-1">
             {sessions
               .filter((s) => s.title.toLowerCase().includes(filter.toLowerCase()))
               .map((s) => (
-              <div key={s.id} className={cn("group rounded-md", s.id === activeSessionId && "bg-muted")}> 
+              <div key={s.id} className={cn("group rounded-md transition-all duration-200 hover:shadow-sm", s.id === activeSessionId && "bg-muted ring-2 ring-primary/20")}> 
                 <div className="flex items-center gap-2">
                   <button
                     className={cn(
-                      "flex-1 text-left text-sm p-2 rounded hover:bg-muted",
+                      "flex-1 text-left text-sm p-2 rounded transition-all duration-200 hover:bg-muted hover:scale-[1.01]",
                       s.id === activeSessionId && "bg-muted"
                     )}
                     onClick={() => setActiveSessionId(s.id)}
@@ -400,16 +411,16 @@ export function ChatPanel() {
                       {isHydrated ? new Date(s.updatedAt || s.createdAt).toLocaleString() : new Date(s.updatedAt || s.createdAt).toISOString()}
                     </div>
                   </button>
-                  <div className="flex items-center gap-1 pr-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition">
+                  <div className="flex items-center gap-1 pr-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200">
                     <button
-                      className="text-xs px-1 py-0.5 rounded hover:bg-accent"
+                      className="text-xs px-1.5 py-1 rounded transition-all duration-200 hover:bg-accent hover:scale-110"
                       title="Rename"
                       onClick={(e) => { e.stopPropagation(); setEditingId(s.id); setEditingTitle(s.title || ""); }}
                     >
                       <Pencil className="h-3 w-3" />
                     </button>
                     <button
-                      className="text-xs px-1 py-0.5 rounded hover:bg-accent"
+                      className="text-xs px-1.5 py-1 rounded transition-all duration-200 hover:bg-destructive hover:text-destructive-foreground hover:scale-110"
                       title="Delete"
                       onClick={(e) => { e.stopPropagation(); confirmDelete(s.id); }}
                     >
@@ -443,6 +454,7 @@ export function ChatPanel() {
                 setEditingTitle(s?.title || "");
               }}
               title="Rename chat"
+              className="transition-all duration-200 hover:scale-105"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -453,6 +465,7 @@ export function ChatPanel() {
               size="sm"
               onClick={() => activeSessionId && setConfirmDeleteId(activeSessionId)}
               title="Delete chat"
+              className="transition-all duration-200 hover:scale-105 hover:bg-destructive hover:text-destructive-foreground"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -470,30 +483,35 @@ export function ChatPanel() {
         </div>
 
         {/* Messages */}
-        <ScrollArea className="flex-1 p-4">
-          <div className="mx-auto max-w-3xl">
+        <ScrollArea className="flex-1 p-4 chat-scroll">
+          <div className="mx-auto max-w-4xl w-full">
             {!activeSessionId && (
               <div className="text-center text-sm text-muted-foreground py-12">
                 Start a conversation by clicking <span className="font-medium">New Chat</span>.
               </div>
             )}
             {messages.map((m, idx) => (
-              <div key={idx} className={cn("mb-4 flex items-start gap-2 animate-in fade-in-0", m.role === "user" ? "justify-end flex-row-reverse" : "justify-start")}> 
+              <div key={idx} className={cn("mb-4 flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 chat-message", m.role === "user" ? "justify-end flex-row-reverse" : "justify-start")}> 
                 {/* Avatar */}
-                <div className={cn("h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium", m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground")}>
+                <div className={cn("h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium transition-all duration-200 hover:scale-105", m.role === "user" ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-foreground border-2 border-accent/20")}>
                   {m.role === "user" ? "You" : "KM"}
                 </div>
                 {/* Bubble */}
                 <div className="group relative">
-                  <div className={cn("rounded-lg px-3 py-2 max-w-[85%]", m.role === "user" ? "bg-primary text-primary-foreground whitespace-pre-wrap" : "bg-muted")}> 
+                  <div className={cn("rounded-lg px-4 py-3 max-w-[90%] min-w-0 transition-all duration-200 hover:shadow-sm message-content", m.role === "user" ? "bg-primary text-primary-foreground whitespace-pre-wrap" : "bg-muted hover:bg-muted/80")}> 
                     {m.role === "model" ? (
-                      <MarkdownMessage>{m.content}</MarkdownMessage>
+                      <div className="relative">
+                        <MarkdownMessage>{m.content}</MarkdownMessage>
+                        {isStreaming && idx === messages.length - 1 && (
+                          <span className="inline-block w-2 h-5 bg-foreground/60 animate-pulse ml-1 align-text-bottom" />
+                        )}
+                      </div>
                     ) : (
                       <div className="md-content text-sm">{m.content}</div>
                     )}
                   </div>
                   <button
-                    className="absolute -top-2 right-0 text-xs px-1 py-0.5 rounded bg-background border opacity-0 group-hover:opacity-100 transition"
+                    className="absolute -top-2 right-0 text-xs px-2 py-1 rounded-md bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-accent hover:scale-105"
                     title="Copy message"
                     onClick={() => navigator.clipboard.writeText(m.content)}
                   >
@@ -502,10 +520,18 @@ export function ChatPanel() {
                 </div>
               </div>
             ))}
-            {isSending && (
-              <div className="mb-4 flex justify-start">
-                <div className="rounded-lg px-3 py-2 max-w-[85%] bg-muted animate-pulse text-transparent select-none">
-                  Loading response...
+            {isSending && !isStreaming && (
+              <div className="mb-4 flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+                <div className="h-8 w-8 rounded-full bg-muted border-2 border-accent/20 flex items-center justify-center text-xs font-medium animate-pulse">
+                  KM
+                </div>
+                <div className="bg-muted rounded-lg px-4 py-3 max-w-[85%] space-y-2">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    <span className="text-xs text-muted-foreground ml-2">Thinking...</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -515,7 +541,7 @@ export function ChatPanel() {
 
         {/* Composer */}
         <div className="border-t p-3">
-          <div className="mx-auto max-w-3xl flex items-end gap-2">
+          <div className="mx-auto max-w-4xl flex items-end gap-2">
             <Textarea
               value={composer}
               onChange={(e) => setComposer(e.target.value)}
@@ -526,17 +552,33 @@ export function ChatPanel() {
                 }
               }}
               placeholder="Message..."
-              className="min-h-[44px] max-h-40 resize-y"
+              className="min-h-[44px] max-h-40 resize-y focus-ring transition-all duration-200 focus:shadow-md"
               rows={2}
             />
             <div className="flex gap-2 pb-1">
-              <Button variant="outline" disabled={!isSending} onClick={handleStop} title="Stop">
+              <Button 
+                variant="outline" 
+                disabled={!isSending} 
+                onClick={handleStop} 
+                title="Stop"
+                className="transition-all duration-200 hover:scale-105 hover:bg-destructive hover:text-destructive-foreground disabled:hover:scale-100 disabled:hover:bg-background"
+              >
                 <Square className="h-4 w-4" />
               </Button>
-              <Button variant="outline" disabled={isSending || messages.length < 1} onClick={handleRegenerate} title="Regenerate">
-                <RefreshCw className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                disabled={isSending || messages.length < 1} 
+                onClick={handleRegenerate} 
+                title="Regenerate"
+                className="transition-all duration-200 hover:scale-105 disabled:hover:scale-100"
+              >
+                <RefreshCw className={cn("h-4 w-4", isSending && "animate-spin")} />
               </Button>
-              <Button onClick={handleSend} disabled={isSending || !composer.trim()}>
+              <Button 
+                onClick={handleSend} 
+                disabled={isSending || !composer.trim()}
+                className="transition-all duration-200 hover:scale-105 disabled:hover:scale-100 shadow-md hover:shadow-lg"
+              >
                 <Send className="h-4 w-4 mr-1" /> Send
               </Button>
             </div>

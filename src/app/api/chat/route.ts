@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { appendToSession, createSession } from "@/lib/chat-store";
-import { clientKey, rateLimit } from "@/lib/rate-limit";
+import { clientKey, rateLimit, getRateLimitConfig } from "@/lib/rate-limit";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -11,26 +11,49 @@ const SYSTEM_INSTRUCTION =
 
 export async function POST(req: Request) {
   try {
+    // Input validation schema with stricter limits
     const schema = z.object({
-      messages: z.array(z.object({ role: z.enum(["user", "model"]), content: z.string() })).min(1),
-      apiKey: z.string().optional(),
-      model: z.string().default("gemini-2.0-flash"),
-      sessionId: z.string().optional(),
+      messages: z.array(z.object({ 
+        role: z.enum(["user", "model"]), 
+        content: z.string().min(1).max(10000) // Limit message size
+      })).min(1).max(50), // Limit conversation length
+      apiKey: z.string().max(200).optional(), // Limit API key length
+      model: z.string().regex(/^[a-zA-Z0-9\-\.]+$/).default("gemini-2.0-flash"), // Validate model name
+      sessionId: z.string().uuid().optional(), // Ensure valid UUID
       stream: z.boolean().optional(),
     });
-    const parsed = schema.parse(await req.json());
+    
+    const body = await req.json().catch(() => ({}));
+    const parsed = schema.parse(body);
 
+    // Enhanced rate limiting
+    const rateLimitConfig = getRateLimitConfig();
     const ipKey = clientKey(req);
-    if (!rateLimit(`chat:${ipKey}`, 20, 60_000)) {
-      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    
+    if (rateLimitConfig.enabled && !rateLimit(`chat:${ipKey}`, rateLimitConfig.requestsPerMinute, 60_000)) {
+      return NextResponse.json({ error: "Rate limit exceeded. Please try again later." }, { status: 429 });
+    }
+
+    // Validate content for potential abuse
+    const totalContent = parsed.messages.map(m => m.content).join("");
+    if (totalContent.length > 20000) {
+      return NextResponse.json({ error: "Request too large" }, { status: 413 });
     }
 
     const allowedModels = new Set(["gemini-2.0-flash", "gemini-1.5-pro"]);
     const useModel = allowedModels.has(parsed.model) ? parsed.model : "gemini-2.0-flash";
     const serverApiKey = process.env.GOOGLE_API_KEY;
     const keyToUse = parsed.apiKey && parsed.apiKey.trim() !== "" ? parsed.apiKey : serverApiKey;
+    
     if (!keyToUse) {
-      return NextResponse.json({ error: "Missing API key" }, { status: 400 });
+      console.warn("Chat API called without API key", { ip: ipKey });
+      return NextResponse.json({ error: "Missing API key. Please configure your API key in settings." }, { status: 400 });
+    }
+
+    // Basic API key format validation (Google AI API keys start with 'AI')
+    if (!keyToUse.startsWith('AI') || keyToUse.length < 20) {
+      console.warn("Invalid API key format", { ip: ipKey });
+      return NextResponse.json({ error: "Invalid API key format" }, { status: 400 });
     }
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${useModel}:generateContent?key=${keyToUse}`,
@@ -43,7 +66,6 @@ export async function POST(req: Request) {
             role: m.role,
             parts: [{ text: m.content }],
           })),
-          // Use an allowed MIME type; still instruct Markdown via system prompt
           generationConfig: { responseMimeType: "text/plain", temperature: 0.4 },
         }),
       }
@@ -109,7 +131,7 @@ export async function POST(req: Request) {
       const created = await createSession("New Chat");
       ensuredSessionId = created.id;
     }
-    // If stream requested, stream the final text in chunks to simulate token streaming
+    // If stream requested, send complete text to avoid corruption issues
     if (parsed.stream) {
       const encoder = new TextEncoder();
       const readable = new ReadableStream<Uint8Array>({
@@ -117,14 +139,10 @@ export async function POST(req: Request) {
           function send(obj: unknown) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
           }
-          // Inform client of sessionId
+          
+          // Send session info and complete text at once
           send({ sessionId: ensuredSessionId });
-          // Chunk the text to simulate token-by-token streaming
-          const chunkSize = 40;
-          for (let i = 0; i < text.length; i += chunkSize) {
-            const delta = text.slice(i, i + chunkSize);
-            if (delta) send({ delta });
-          }
+          send({ delta: text });
           send({ done: true });
           controller.close();
         },
@@ -150,7 +168,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: text, sessionId: ensuredSessionId });
     }
   } catch (err) {
-    console.error("Chat error", err);
-    return NextResponse.json({ error: "Failed to generate reply" }, { status: 500 });
+    console.error("Chat API error", {
+      error: err instanceof Error ? err.message : String(err),
+      ip: clientKey(req),
+      timestamp: new Date().toISOString()
+    });
+    
+    // Don't expose internal errors to client
+    if (err instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: "Invalid request format",
+        details: err.issues.map(i => `${i.path.join('.')}: ${i.message}`)
+      }, { status: 400 });
+    }
+    
+    return NextResponse.json({ 
+      error: "Internal server error. Please try again later." 
+    }, { status: 500 });
   }
 }

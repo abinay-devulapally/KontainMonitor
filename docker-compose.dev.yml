@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  kontain-monitor-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: kontain-monitor-dev
+    ports:
+      - "9002:9002"
+    volumes:
+      # Mount Docker socket for container monitoring
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Development hot reload
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - PORT=9002
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - RATE_LIMIT_ENABLED=false
+    command: ["npm", "run", "dev"]
+    networks:
+      - kontain-dev-network
+
+networks:
+  kontain-dev-network:
+    driver: bridge
