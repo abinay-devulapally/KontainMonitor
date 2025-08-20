@@ -19,15 +19,31 @@ export function SettingsForm() {
   const [model, setModel] = React.useState("gemini-2.0-flash");
   const [saved, setSaved] = React.useState(false);
   const { theme, setTheme } = useTheme();
+  const [showConnectionNotice, setShowConnectionNotice] = React.useState(true);
+  const [allowActions, setAllowActions] = React.useState(false);
 
   React.useEffect(() => {
     setApiKey(localStorage.getItem("aiApiKey") || "");
     setModel(localStorage.getItem("aiModel") || "gemini-2.0-flash");
+    const storedNotice = localStorage.getItem("showConnectionNotice");
+    setShowConnectionNotice(storedNotice === null ? true : storedNotice === "true");
+    // Load server settings
+    fetch("/api/settings")
+      .then((r) => (r.ok ? r.json() : { allowContainerActions: false }))
+      .then((s: { allowContainerActions?: boolean }) => setAllowActions(!!s.allowContainerActions))
+      .catch(() => setAllowActions(false));
   }, []);
 
   const handleSave = () => {
     localStorage.setItem("aiApiKey", apiKey);
     localStorage.setItem("aiModel", model);
+    localStorage.setItem("showConnectionNotice", String(showConnectionNotice));
+    // Persist server-side setting
+    fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allowContainerActions: allowActions }),
+    }).catch(() => {});
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -64,6 +80,22 @@ export function SettingsForm() {
           id="theme"
           checked={theme === "dark"}
           onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+        />
+      </div>
+      <div className="flex items-center justify-between">
+        <Label htmlFor="allowActions">Enable container actions</Label>
+        <Switch
+          id="allowActions"
+          checked={allowActions}
+          onCheckedChange={setAllowActions}
+        />
+      </div>
+      <div className="flex items-center justify-between">
+        <Label htmlFor="connNotice">Connection notice</Label>
+        <Switch
+          id="connNotice"
+          checked={showConnectionNotice}
+          onCheckedChange={setShowConnectionNotice}
         />
       </div>
       <Button onClick={handleSave}>Save</Button>

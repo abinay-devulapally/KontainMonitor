@@ -38,12 +38,15 @@ import {
 } from "../ui/alert-dialog";
 import * as React from "react";
 
+import type { EnvInfo } from "./engine-banner";
+
 interface DetailsPanelProps {
   item: Container | Pod | null;
   onItemUpdate: (item: Container | Pod) => void;
+  env?: EnvInfo | null;
 }
 
-export function DetailsPanel({ item, onItemUpdate }: DetailsPanelProps) {
+export function DetailsPanel({ item, onItemUpdate, env }: DetailsPanelProps) {
   const [isActionAlertOpen, setIsActionAlertOpen] = React.useState(false);
   const [pendingAction, setPendingAction] = React.useState<string | null>(null);
   const [alertTitle, setAlertTitle] = React.useState("");
@@ -76,11 +79,16 @@ export function DetailsPanel({ item, onItemUpdate }: DetailsPanelProps) {
     if (!item || !pendingAction) return;
     try {
       if (item.type === "container") {
-        await fetch(`/api/containers/${item.id}`, {
+        const resPost = await fetch(`/api/containers/${item.id}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: pendingAction }),
         });
+        if (!resPost.ok) {
+          const msg = await resPost.text().catch(() => "Action failed");
+          alert(`Container action failed (${resPost.status}): ${msg}\nEnsure ALLOW_CONTAINER_ACTIONS=true and Docker permissions are configured.`);
+          return;
+        }
         const res = await fetch(`/api/containers/${item.id}`);
         const updated = (await res.json()) as Container;
         onItemUpdate(updated);
@@ -104,6 +112,12 @@ export function DetailsPanel({ item, onItemUpdate }: DetailsPanelProps) {
 
   const isContainer = item.type === "container";
   const itemAsContainer = item as Container;
+  const canAct = !!env?.actionsEnabled && !!env?.docker.available;
+  const disabledReason = !env?.actionsEnabled
+    ? "Actions disabled (set ALLOW_CONTAINER_ACTIONS=true)"
+    : !env?.docker.available
+    ? "Docker engine not reachable"
+    : undefined;
 
   const controlButtons = (
     <div className="flex gap-2">
@@ -118,20 +132,21 @@ export function DetailsPanel({ item, onItemUpdate }: DetailsPanelProps) {
             `Are you sure you want to ${item.status === "paused" ? "resume" : "start"} ${item.name}?`
           )
         }
-        disabled={item.status === "running"}
+        disabled={item.status === "running" || !canAct}
+        title={disabledReason}
       >
         <Play className="h-4 w-4 text-green-500" />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Pause" onClick={() => handleAction("pause", "Pause Container?", `Are you sure you want to pause ${item.name}?`)} disabled={item.status !== 'running'}>
+      <Button variant="ghost" size="icon" aria-label="Pause" onClick={() => handleAction("pause", "Pause Container?", `Are you sure you want to pause ${item.name}?`)} disabled={item.status !== 'running' || !canAct} title={disabledReason}>
         <Pause className="h-4 w-4 text-yellow-500" />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Stop" onClick={() => handleAction("stop", "Stop Container?", `Are you sure you want to stop ${item.name}?`)} disabled={item.status === 'stopped'}>
+      <Button variant="ghost" size="icon" aria-label="Stop" onClick={() => handleAction("stop", "Stop Container?", `Are you sure you want to stop ${item.name}?`)} disabled={item.status === 'stopped' || !canAct} title={disabledReason}>
         <StopCircle className="h-4 w-4 text-red-500" />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Restart" onClick={() => handleAction("restart", "Restart Container?", `Are you sure you want to restart ${item.name}?`)}>
+      <Button variant="ghost" size="icon" aria-label="Restart" onClick={() => handleAction("restart", "Restart Container?", `Are you sure you want to restart ${item.name}?`)} disabled={!canAct} title={disabledReason}>
         <RefreshCw className="h-4 w-4 text-blue-500" />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Delete" onClick={() => handleAction("delete", "Delete Container?", `Are you sure you want to delete ${item.name}? This action cannot be undone.`)}>
+      <Button variant="ghost" size="icon" aria-label="Delete" onClick={() => handleAction("delete", "Delete Container?", `Are you sure you want to delete ${item.name}? This action cannot be undone.`)} disabled={!canAct} title={disabledReason}>
         <Trash2 className="h-4 w-4 text-gray-500" />
       </Button>
     </div>
@@ -139,16 +154,16 @@ export function DetailsPanel({ item, onItemUpdate }: DetailsPanelProps) {
   
     const podControlButtons = (
     <div className="flex gap-2">
-      <Button variant="ghost" size="icon" aria-label="Start Pod" onClick={() => handleAction("start", "Start Pod?", `Are you sure you want to start ${item.name}?`)} disabled={item.status === 'running'}>
+      <Button variant="ghost" size="icon" aria-label="Start Pod" onClick={() => handleAction("start", "Start Pod?", `Are you sure you want to start ${item.name}?`)} disabled title="Pod actions are not implemented in backend">
         <Play className="h-4 w-4 text-green-500" />
       </Button>
-       <Button variant="ghost" size="icon" aria-label="Stop Pod" onClick={() => handleAction("stop", "Stop Pod?", `Are you sure you want to stop ${item.name}?`)} disabled={item.status === 'stopped' || item.status === 'failed'}>
+       <Button variant="ghost" size="icon" aria-label="Stop Pod" onClick={() => handleAction("stop", "Stop Pod?", `Are you sure you want to stop ${item.name}?`)} disabled title="Pod actions are not implemented in backend">
         <StopCircle className="h-4 w-4 text-red-500" />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Restart Pod" onClick={() => handleAction("restart", "Restart Pod?", `Are you sure you want to restart ${item.name}?`)}>
+      <Button variant="ghost" size="icon" aria-label="Restart Pod" onClick={() => handleAction("restart", "Restart Pod?", `Are you sure you want to restart ${item.name}?`)} disabled title="Pod actions are not implemented in backend">
         <RefreshCw className="h-4 w-4 text-blue-500" />
       </Button>
-       <Button variant="ghost" size="icon" aria-label="Delete Pod" onClick={() => handleAction("delete", "Delete Pod?", `Are you sure you want to delete ${item.name}? This action cannot be undone.`)}>
+       <Button variant="ghost" size="icon" aria-label="Delete Pod" onClick={() => handleAction("delete", "Delete Pod?", `Are you sure you want to delete ${item.name}? This action cannot be undone.`)} disabled title="Pod actions are not implemented in backend">
         <Trash2 className="h-4 w-4 text-gray-500" />
       </Button>
     </div>

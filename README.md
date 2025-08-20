@@ -51,3 +51,64 @@ Persistence:
 ## Notes
 
 Container and pod data is collected from the local Docker or Rancher engine. Ensure the host exposes `/var/run/docker.sock` or the Windows named pipe for the app to retrieve real metrics.
+
+## Run as a Container (with monitoring)
+
+When running the app inside a container, it cannot see your host's Docker or Kubernetes by default. Mount the appropriate sockets/configs or point `DOCKER_HOST` to a reachable endpoint.
+
+- Linux/macOS (Docker socket + kubeconfig):
+
+  ```bash
+  docker run --rm -p 3000:3000 \
+    -e GOOGLE_API_KEY=your_key_here \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -v $HOME/.kube/config:/root/.kube/config:ro \
+    ghcr.io/abinay-devulapally/kontainmonitor:latest
+  ```
+
+- Podman (user socket):
+
+  ```bash
+  export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock
+  podman system service --time=0 &
+  docker run --rm -p 3000:3000 \
+    -e GOOGLE_API_KEY=your_key_here \
+    -e DOCKER_HOST="$DOCKER_HOST" \
+    -v /run/user/$(id -u)/podman/podman.sock:/run/user/$(id -u)/podman/podman.sock \
+    ghcr.io/abinay-devulapally/kontainmonitor:latest
+  ```
+
+- Windows (Docker Desktop):
+  - For Linux containers, the Windows named pipe cannot be directly mounted into a Linux container. Use a TCP `DOCKER_HOST` (enable "Expose daemon on tcp://localhost:2375 without TLS" in Docker Desktop settings), then:
+
+    ```powershell
+    docker run --rm -p 3000:3000 \
+      -e GOOGLE_API_KEY=your_key_here \
+      -e DOCKER_HOST=tcp://host.docker.internal:2375 \
+      ghcr.io/abinay-devulapally/kontainmonitor:latest
+    ```
+
+  - For Windows containers, map the named pipe:
+
+    ```powershell
+    docker run --rm -p 3000:3000 \
+      -e GOOGLE_API_KEY=your_key_here \
+      -v \\./pipe/docker_engine:\\./pipe/docker_engine \
+      ghcr.io/abinay-devulapally/kontainmonitor:latest
+    ```
+
+If you do not mount a Docker socket or set `DOCKER_HOST`, the Containers page will be empty. Similarly, to see Pods, mount your kubeconfig or run the container inside a cluster with in-cluster config available.
+
+### Enabling container actions (start/stop/restart/delete)
+
+- By default, actions are disabled for safety. To enable:
+
+  - Local dev: create `.env.local` with:
+
+    ```env
+    ALLOW_CONTAINER_ACTIONS=true
+    ```
+
+  - Docker: pass `-e ALLOW_CONTAINER_ACTIONS=true`.
+
+- The UI disables buttons and shows a banner if actions are off or the engine is unreachable.
