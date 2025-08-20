@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { MarkdownMessage } from "./markdown-message";
-import "highlight.js/styles/github.css";
+import "highlight.js/styles/github-dark.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,6 +63,7 @@ export function ChatPanel() {
     if (savedModel) setModel(savedModel);
     // initial sessions load
     refreshSessions(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
