@@ -2,19 +2,13 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Security: Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
-
-# Install dependencies for building
+# Install dependencies (as root for package installation)
 COPY package*.json ./
-RUN npm ci --only=production && \
+RUN npm ci && \
     npm cache clean --force
 
 # Copy source code
 COPY . .
-RUN chown -R nextjs:nodejs /app
-USER nextjs
 
 # Ensure public exists AND is non-empty so multi-stage COPY won't fail
 RUN mkdir -p public && touch public/.keep
@@ -36,8 +30,11 @@ ENV PORT=3000
 # Install curl for health checks
 RUN apk --no-cache add curl
 
+# Install production dependencies only
+COPY --from=builder /app/package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
 # Copy built application
-COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 

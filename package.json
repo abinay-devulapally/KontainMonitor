@@ -11,7 +11,7 @@
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests specified\" && exit 0",
+    "test": "npm run typecheck && npm run lint",
     "docker:build": "docker build -t kontain-monitor .",
     "docker:run": "docker run -p 3000:3000 -v /var/run/docker.sock:/var/run/docker.sock kontain-monitor",
     "docker:compose": "docker-compose up -d",
