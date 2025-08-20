@@ -7,7 +7,47 @@ import rehypeHighlight from "rehype-highlight";
 import { cn } from "@/lib/utils";
 
 export function MarkdownMessage({ children }: { children: string }) {
-  const [copiedIdx, setCopiedIdx] = React.useState<number | null>(null);
+  const CodeBlock = ({ inline, className, children: codeChildren, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) => {
+    const [copied, setCopied] = React.useState(false);
+    const raw = String(codeChildren || "");
+    const lang =
+      /language-(\w+)/.exec(className || "")?.[1] ||
+      (!inline && /\b(def |import |from |class )/.test(raw) ? "python" : "");
+    if (inline) {
+      return (
+        <code className={cn("px-1 py-0.5 rounded bg-muted font-code", className)} {...props}>
+          {raw}
+        </code>
+      );
+    }
+    return (
+      <div className="my-3 rounded-md border overflow-hidden">
+        <div className="flex items-center justify-between border-b bg-muted/60 px-2 py-1 text-xs">
+          <span className="font-mono text-muted-foreground">{lang || "text"}</span>
+          <button
+            type="button"
+            className={cn(
+              "rounded border px-2 py-0.5",
+              copied ? "bg-primary text-primary-foreground" : "bg-background"
+            )}
+            onClick={async () => {
+              await navigator.clipboard.writeText(raw);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1200);
+            }}
+            aria-label="Copy code"
+          >
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+        <pre className={cn("overflow-auto bg-muted p-3 font-code text-sm", className)}>
+          <code className={cn(className)} {...props}>
+            {codeChildren}
+          </code>
+        </pre>
+      </div>
+    );
+  };
 
   const components = {
     a({ className, ...props }: React.ComponentPropsWithoutRef<"a">) {
@@ -23,47 +63,11 @@ export function MarkdownMessage({ children }: { children: string }) {
         />
       );
     },
-    img({ className, ...props }: React.ComponentPropsWithoutRef<"img">) {
+    img({ className, alt, ...props }: React.ComponentPropsWithoutRef<"img"> & { alt?: string }) {
       // eslint-disable-next-line @next/next/no-img-element
-      return <img {...props} className={cn("rounded-md border max-w-full h-auto", className)} />;
+      return <img {...props} alt={alt || ""} className={cn("rounded-md border max-w-full h-auto", className)} />;
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    code({ inline, className, children: codeChildren, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
-      const [copied, setCopied] = React.useState(false);
-      const raw = String(codeChildren || "");
-      let lang = /language-(\w+)/.exec(className || "")?.[1] || "";
-      // Heuristic: if block contains Python-y keywords and no lang, assume python
-      if (!inline && !lang && /\b(def |import |from |class )/.test(raw)) lang = "python";
-      if (inline) {
-        return (
-          <code className={cn("px-1 py-0.5 rounded bg-muted font-code", className)} {...props}>
-            {raw}
-          </code>
-        );
-      }
-      return (
-        <div className="my-3 rounded-md border overflow-hidden">
-          <div className="flex items-center justify-between px-2 py-1 text-xs bg-muted/60 border-b">
-            <div className="font-mono text-muted-foreground">{lang || "text"}</div>
-            <button
-              type="button"
-              className={cn("px-2 py-0.5 rounded border", copied ? "bg-primary text-primary-foreground" : "bg-background")}
-              onClick={async () => {
-                await navigator.clipboard.writeText(raw);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1200);
-              }}
-              aria-label="Copy code"
-            >
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </div>
-          <pre className={cn("p-3 overflow-auto bg-muted font-code text-sm", className, lang ? `language-${lang}` : undefined)}>
-            <code className={cn(lang ? `language-${lang}` : undefined)} {...props}>{codeChildren}</code>
-          </pre>
-        </div>
-      );
-    },
+    code: CodeBlock,
   } as const;
 
   return (

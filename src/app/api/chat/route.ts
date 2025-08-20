@@ -48,6 +48,7 @@ export async function POST(req: Request) {
         }),
       }
     );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await res.json().catch(() => undefined as any);
 
     // Build an informative error message when upstream fails or returns nothing.
