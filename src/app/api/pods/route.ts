@@ -8,7 +8,11 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const kc = new k8s.KubeConfig();
-    kc.loadFromDefault();
+    if (process.env.KUBERNETES_SERVICE_HOST) {
+      kc.loadFromCluster();
+    } else {
+      kc.loadFromDefault();
+    }
     const api = kc.makeApiClient(k8s.CoreV1Api);
       // The client library types differ across versions; fall back to any for compatibility
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -83,3 +83,87 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Lightweight Markdown styling without @tailwindcss/typography */
+  .md-content {
+    @apply leading-relaxed space-y-3 text-foreground;
+  }
+  .md-content h1 { @apply text-2xl font-semibold mt-6 mb-3; }
+  .md-content h2 { @apply text-xl font-semibold mt-5 mb-2; }
+  .md-content h3 { @apply text-lg font-semibold mt-4 mb-2; }
+  .md-content h4 { @apply text-base font-semibold mt-3 mb-2; }
+  .md-content p { @apply my-3; }
+  .md-content ul { @apply list-disc pl-6 my-3; }
+  .md-content ol { @apply list-decimal pl-6 my-3; }
+  .md-content li > ul, .md-content li > ol { @apply my-1; }
+  .md-content blockquote { @apply border-l-2 pl-4 italic text-muted-foreground bg-muted/40 rounded-md py-2 my-4; }
+  .md-content hr { @apply my-6 border-muted; }
+  .md-content table { @apply w-full text-left border-collapse my-4; }
+  .md-content th { @apply bg-muted/60 font-medium px-3 py-2 border; }
+  .md-content td { @apply px-3 py-2 border align-top; }
+  .md-content code:not(pre code) { @apply bg-muted px-1 py-0.5 rounded font-code; }
+  .md-content pre { @apply rounded-md border bg-muted p-3 overflow-x-auto my-3 max-w-full; }
+  
+  /* Chat UI Animations */
+  .chat-message-enter {
+    animation: slideInFromBottom 0.3s ease-out;
+  }
+  
+  @keyframes slideInFromBottom {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Smooth focus ring for better accessibility */
+  .focus-ring:focus {
+    @apply ring-2 ring-primary ring-offset-2 outline-none transition-all duration-200;
+  }
+  
+  /* Improved scrollbar styling */
+  .chat-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .chat-scroll::-webkit-scrollbar-track {
+    @apply bg-muted/20;
+  }
+  
+  .chat-scroll::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+  
+  .chat-scroll::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+  
+  /* Code block improvements */
+  .md-content pre {
+    overflow-x: auto;
+    word-wrap: normal;
+    white-space: pre;
+  }
+  
+  .md-content code {
+    word-break: break-word;
+  }
+  
+  /* Message content width handling */
+  .message-content {
+    min-width: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Horizontal scroll for wide content */
+  .chat-message {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+}

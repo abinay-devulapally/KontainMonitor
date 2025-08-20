@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "../ui/input";
 import { Search } from "lucide-react";
+import { EngineBanner, type EnvInfo } from "./engine-banner";
 
 export function DashboardClient({
   initialTab = "containers",
@@ -24,16 +25,28 @@ export function DashboardClient({
   >(null);
   const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [envInfo, setEnvInfo] = React.useState<EnvInfo | null>(null);
+  const [showNotice, setShowNotice] = React.useState(true);
 
   React.useEffect(() => {
     async function fetchData() {
       try {
-        const [containersRes, podsRes] = await Promise.all([
+        const [containersRes, podsRes, envRes] = await Promise.all([
           fetch("/api/containers"),
           fetch("/api/pods"),
+          fetch("/api/env").catch(() => null),
         ]);
         const containersData: Container[] = await containersRes.json();
         const podsData: Pod[] = await podsRes.json();
+        if (envRes) {
+          try {
+            const env: EnvInfo = await envRes.json();
+            setEnvInfo(env);
+          } catch {}
+        }
+        // Load user preference for showing the connection notice
+        const storedNotice = localStorage.getItem("showConnectionNotice");
+        setShowNotice(storedNotice === null ? true : storedNotice === "true");
         setContainers(containersData);
         setPods(podsData);
         if (containersData.length > 0) {
@@ -92,6 +105,7 @@ export function DashboardClient({
     <MainLayout>
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 p-4 h-[calc(100vh-2rem)]">
         <div className="xl:col-span-3 h-full flex flex-col">
+          {showNotice && <EngineBanner env={envInfo} />}
           <Tabs defaultValue={initialTab} className="flex-grow flex flex-col">
             <div className="flex justify-between items-center gap-4">
               <TabsList className="grid w-full grid-cols-2">
@@ -145,7 +159,7 @@ export function DashboardClient({
           </Tabs>
         </div>
         <div className="xl:col-span-2 h-full overflow-hidden">
-          <DetailsPanel item={selectedItem} onItemUpdate={handleUpdateItem} />
+          <DetailsPanel item={selectedItem} onItemUpdate={handleUpdateItem} env={envInfo} />
         </div>
       </div>
     </MainLayout>

@@ -1,6 +1,7 @@
 import Docker from "dockerode";
 import { NextResponse } from "next/server";
 import type { Container } from "@/types";
+import { getSettings } from "@/lib/settings-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -121,7 +122,9 @@ export async function POST(
     if (!action) {
       return new NextResponse("Missing action", { status: 400 });
     }
-    if (process.env.ALLOW_CONTAINER_ACTIONS !== "true") {
+    const settings = await getSettings();
+    const allow = process.env.ALLOW_CONTAINER_ACTIONS === "true" || settings.allowContainerActions === true;
+    if (!allow) {
       return new NextResponse("Container actions are disabled", { status: 403 });
     }
     const containerId = params.id;
