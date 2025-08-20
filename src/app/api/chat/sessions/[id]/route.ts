@@ -6,10 +6,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const messages = await getSessionMessages(params.id);
+    const { id } = await context.params;
+    const messages = await getSessionMessages(id);
     if (!messages) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(messages);
   } catch (err) {
@@ -20,12 +21,13 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await req.json().catch(() => ({}));
     if (typeof body.title === "string" && body.title.trim()) {
-      await renameSession(params.id, body.title.trim());
+      const { id } = await context.params;
+      await renameSession(id, body.title.trim());
       return NextResponse.json({ success: true });
     }
     return NextResponse.json({ success: false }, { status: 400 });
@@ -37,14 +39,14 @@ export async function PATCH(
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    await deleteSession(params.id);
+    const { id } = await context.params;
+    await deleteSession(id);
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Failed to delete session", err);
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }
-
