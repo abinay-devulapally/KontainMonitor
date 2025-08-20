@@ -42,9 +42,14 @@ export async function POST(req: Request) {
       }
     );
     const data = await res.json();
-    const text =
-      data.candidates?.[0]?.content?.parts?.map((p: { text: string }) => p.text).join(" ") ||
-      "";
+    const parts = data.candidates?.[0]?.content?.parts;
+    // The Generative Language API may return multiple parts where each
+    // successive part contains the full text generated so far. Joining all of
+    // them can lead to duplicated content in the final reply. Use only the
+    // last part's text to avoid repeating tokens and preserve any markdown.
+    const text = Array.isArray(parts)
+      ? parts[parts.length - 1]?.text || ""
+      : "";
 
     const userMsg = parsed.messages[parsed.messages.length - 1];
     // Ensure we have a session to append to
