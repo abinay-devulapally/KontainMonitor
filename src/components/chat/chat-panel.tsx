@@ -36,8 +36,8 @@ export function ChatPanel() {
     setModel(localStorage.getItem("aiModel") || "gemini-2.0-flash");
     // Load sessions
     fetch("/api/chat/sessions")
-      .then((r) => r.ok ? r.json() : [])
-      .then(async (list: any[]) => {
+      .then((r) => (r.ok ? r.json() : []))
+      .then(async (list: { id: string; title: string; createdAt: string; updatedAt: string }[]) => {
         let s = Array.isArray(list) ? list : [];
         if (s.length === 0) {
           const resp = await fetch("/api/chat/sessions", {

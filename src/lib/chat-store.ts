@@ -70,7 +70,9 @@ async function readStore(): Promise<ChatStoreFile> {
 
 export async function listSessions(): Promise<Omit<ChatSession, "messages">[]> {
   const store = await readStore();
-  return store.sessions.map(({ messages, ...meta }) => meta).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return store.sessions
+    .map((s) => ({ id: s.id, title: s.title, createdAt: s.createdAt, updatedAt: s.updatedAt }))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 export async function createSession(title = "New Chat"): Promise<Omit<ChatSession, "messages">> {
@@ -86,8 +88,7 @@ export async function createSession(title = "New Chat"): Promise<Omit<ChatSessio
     };
     store.sessions.unshift(session);
     await writeStore(store);
-    const { messages, ...meta } = session;
-    return meta;
+    return { id: session.id, title: session.title, createdAt: session.createdAt, updatedAt: session.updatedAt };
   });
 }
 

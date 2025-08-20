@@ -6,11 +6,6 @@ import { z } from "zod";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-interface ChatMessage {
-  role: "user" | "model";
-  content: string;
-}
-
 export async function POST(req: Request) {
   try {
     const schema = z.object({
