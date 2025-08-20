@@ -34,10 +34,12 @@ function mapHealth(health?: { Status?: string }): Container["health"] {
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const params = await context.params;
+  const containerId = params.id;
   try {
-    const container = docker.getContainer(params.id);
+    const container = docker.getContainer(containerId);
     const [inspect, stats, logsBuf, versionRaw] = await Promise.all([
       container.inspect(),
       container.stats({ stream: false }).catch(() => null),
@@ -111,11 +113,20 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { action } = await req.json();
-    const container = docker.getContainer(params.id);
+    const { params } = await Promise.resolve(context);
+    const body = await req.json().catch(() => ({}));
+    const action = typeof body.action === "string" ? body.action : undefined;
+    if (!action) {
+      return new NextResponse("Missing action", { status: 400 });
+    }
+    if (process.env.ALLOW_CONTAINER_ACTIONS !== "true") {
+      return new NextResponse("Container actions are disabled", { status: 403 });
+    }
+    const containerId = params.id;
+    const container = docker.getContainer(containerId);
     switch (action) {
       case "start":
         await container.start();

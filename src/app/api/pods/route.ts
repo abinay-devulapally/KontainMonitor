@@ -14,6 +14,22 @@ export async function GET() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res: any = await api.listPodForAllNamespaces();
       const items: k8s.V1Pod[] = res.body?.items ?? res.items ?? [];
+      const redactKeys = /secret|token|password|key/i;
+      const redact = (obj: unknown): unknown => {
+        if (Array.isArray(obj)) return obj.map(redact);
+        if (obj && typeof obj === "object") {
+          const out: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+            if (redactKeys.test(k)) {
+              out[k] = "***redacted***";
+            } else {
+              out[k] = redact(v);
+            }
+          }
+          return out;
+        }
+        return obj;
+      };
       const pods: Pod[] = items.map((p) => {
       const phase = p.status?.phase?.toLowerCase() || "pending";
       const phaseMap: Record<string, Pod["status"]> = {
@@ -30,7 +46,7 @@ export async function GET() {
         containers: p.spec?.containers?.map((c: k8s.V1Container) => c.name) || [],
         cpuUsage: [],
         memoryUsage: [],
-        config: JSON.stringify(p, null, 2),
+        config: JSON.stringify(redact(p), null, 2),
       };
     });
     return NextResponse.json(pods);
