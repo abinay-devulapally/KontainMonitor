@@ -29,12 +29,24 @@ curl -X POST http://localhost:3000/api/containers/<id> \
 ```
 
 ### Chat
-- `GET /api/chat/history` – previous chat messages stored on the server
-- `POST /api/chat` – send a chat conversation and receive a reply
+- `POST /api/chat` – send a chat conversation and receive a reply. Accepts `{ messages, model?, sessionId? }`. Uses server env `GOOGLE_API_KEY` if client key not provided.
+- `GET /api/chat/history` – legacy endpoint returning latest session messages (backward compatible)
+- `GET /api/chat/sessions` – list chat sessions
+- `POST /api/chat/sessions` – create a session `{ title? }`
+- `GET /api/chat/sessions/:id` – get messages of a session
+- `PATCH /api/chat/sessions/:id` – rename `{ title }`
+- `DELETE /api/chat/sessions/:id` – delete session
 
 ## Deployment
 
 A `Dockerfile` is provided for container builds. CI and deployment workflows are in `.github/workflows`.
+
+Environment variables:
+- `GOOGLE_API_KEY` – server-side default key for chat (recommended)
+- `ALLOW_CONTAINER_ACTIONS` – set to `true` to enable start/stop/restart/pause/delete endpoints
+
+Persistence:
+- Chat history is stored in `data/chat-history.json`. Use a persistent volume in production or switch to a database.
 
 ## Notes
 
