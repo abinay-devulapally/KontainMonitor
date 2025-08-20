@@ -15,10 +15,11 @@ const docker = new Docker(
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const container = docker.getContainer(params.id);
+    const { id } = await context.params;
+    const container = docker.getContainer(id);
     const stats = await container.stats({ stream: false });
     const cpuDelta =
       (stats.cpu_stats.cpu_usage.total_usage || 0) -

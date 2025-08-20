@@ -34,10 +34,9 @@ function mapHealth(health?: { Status?: string }): Container["health"] {
 
 export async function GET(
   _req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const params = await context.params;
-  const containerId = params.id;
+  const { id: containerId } = await context.params;
   try {
     const container = docker.getContainer(containerId);
     const [inspect, stats, logsBuf, versionRaw] = await Promise.all([
@@ -113,10 +112,10 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { params } = await Promise.resolve(context);
+    const params = await context.params;
     const body = await req.json().catch(() => ({}));
     const action = typeof body.action === "string" ? body.action : undefined;
     if (!action) {
