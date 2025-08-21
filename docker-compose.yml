@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   kontain-monitor:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     container_name: kontain-monitor
@@ -10,7 +8,7 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     volumes:
-      # Mount Docker socket for container monitoring
+      # CRITICAL: Mount Docker socket for container monitoring
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Persistent data storage
       - ./data:/app/data
@@ -21,6 +19,8 @@ services:
       - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED:-true}
       - RATE_LIMIT_REQUESTS_PER_MINUTE=${RATE_LIMIT_REQUESTS_PER_MINUTE:-60}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      # IMPORTANT: Enable container actions
+      - ALLOW_CONTAINER_ACTIONS=${ALLOW_CONTAINER_ACTIONS:-true}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
@@ -30,7 +30,7 @@ services:
     labels:
       - "com.docker.compose.project=kontain-monitor"
       - "traefik.enable=true"
-      - "traefik.http.routers.kontain-monitor.rule=Host(\`monitor.localhost\`)"
+      - "traefik.http.routers.kontain-monitor.rule=Host(`monitor.localhost`)"
       - "traefik.http.services.kontain-monitor.loadbalancer.server.port=3000"
     networks:
       - kontain-network
