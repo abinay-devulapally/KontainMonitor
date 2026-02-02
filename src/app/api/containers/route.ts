@@ -32,7 +32,7 @@ function createDockerConnection(): Docker {
     }
 
     console.log(`Using platform-specific socket: ${socketPath} (platform: ${platform})`);
-    
+
     return new Docker({
       socketPath,
       // Add timeout for better error handling
@@ -51,10 +51,10 @@ async function detectContainerEngine(): Promise<Container["engine"]> {
   try {
     const version = await docker.version();
     const platformName = version?.Platform?.Name?.toLowerCase() || "";
-    
-    console.log("Docker version info:", { 
-      version: version?.Version, 
-      platform: platformName 
+
+    console.log("Docker version info:", {
+      version: version?.Version,
+      platform: platformName
     });
 
     if (platformName.includes("rancher")) return "rancher";
@@ -69,7 +69,7 @@ async function detectContainerEngine(): Promise<Container["engine"]> {
 export async function GET() {
   try {
     console.log("Fetching containers list...");
-    
+
     // Test Docker connectivity first
     try {
       await docker.ping();
@@ -112,7 +112,7 @@ export async function GET() {
         };
 
         const state = (c.State as keyof typeof statusMap) || "stopped";
-        
+
         // Enhanced health detection
         const health: Container["health"] = (() => {
           if (c.Status?.includes("(healthy)")) return "healthy";
@@ -140,10 +140,10 @@ export async function GET() {
 
     console.log("Successfully processed containers");
     return NextResponse.json(containers);
-    
+
   } catch (error) {
     console.error("Failed to list containers:", error);
-    
+
     // Provide detailed error information
     const errorDetails = {
       message: error instanceof Error ? error.message : String(error),
@@ -156,8 +156,8 @@ export async function GET() {
     };
 
     return NextResponse.json(
-      { 
-        error: "Failed to list containers", 
+      {
+        error: "Failed to list containers",
         details: errorDetails,
         suggestions: [
           "Ensure Docker daemon is running",
@@ -170,3 +170,4 @@ export async function GET() {
     );
   }
 }
+// dummy trigger

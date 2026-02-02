@@ -8,7 +8,7 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     volumes:
-      # CRITICAL: Mount Docker socket for container monitoring
+      # CRITICAL: Mount Docker socket for container monitoring (Windows Docker Desktop)
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Persistent data storage
       - ./data:/app/data
@@ -34,15 +34,7 @@ services:
       - "traefik.http.services.kontain-monitor.loadbalancer.server.port=3000"
     networks:
       - kontain-network
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - SETGID
-      - SETUID
-    read_only: true
+    privileged: true
     tmpfs:
       - /tmp
       - /app/.next/cache
